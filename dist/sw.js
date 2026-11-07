@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'chacha-release-1.0.0-b8263a294f8f';
-const FILES = ['./', './index.html', './style.css', './chacha.js', './pwa.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
+const CACHE = 'chacha-release-1.1.0-11788390e623';
+const FILES = ['./', './index.html', './style.css', './chacha.js', './pwa.js', './ranking.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
   // Let an existing game finish. A new release activates after old tabs close.
@@ -26,3 +26,5 @@ self.addEventListener('fetch', event => {
     return await cache.match(request, {ignoreSearch: false}) || fetch(request);
   })());
 });
+
+self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting()});
