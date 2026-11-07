@@ -11,8 +11,8 @@ for(const icon of manifest.icons){const b=fs.readFileSync('dist/'+icon.src);asse
 async function serviceWorkerCheck(){
  const origin='https://example.test',base=origin+'/games/chacha/',callbacks={},stores=new Map();
  const key=r=>new URL(typeof r==='string'?r:r.url,base).href;
- const cache={async addAll(files){for(const file of files){const disk=path.join('dist',file==='./'?'index.html':file);assert(fs.existsSync(disk),file);stores.set(key(file),new Response(fs.readFileSync(disk))) }},async match(r){return stores.get(key(r))?.clone()}};
- const deleted=[],context={URL,Response,caches:{open:async()=>cache,keys:async()=>['other-app','chacha-release-obsolete'],delete:async name=>deleted.push(name)},fetch:async()=>{throw Error('offline')},self:{location:{origin,href:base+'sw.js'},clients:{claim:async()=>{}},addEventListener:(name,fn)=>callbacks[name]=fn}};
+ const cache={async addAll(files){for(const file of files){const relative=typeof file==='string'?file:new URL(file.url).pathname.slice(new URL(base).pathname.length);const disk=path.join('dist',relative==='./'||relative===''?'index.html':relative);assert(fs.existsSync(disk),file);stores.set(key(file),new Response(fs.readFileSync(disk))) }},async match(r){return stores.get(key(r))?.clone()}};
+ const deleted=[],context={URL,Request,Response,caches:{open:async()=>cache,keys:async()=>['other-app','chacha-release-obsolete'],delete:async name=>deleted.push(name)},fetch:async()=>{throw Error('offline')},self:{location:{origin,href:base+'sw.js'},clients:{claim:async()=>{}},addEventListener:(name,fn)=>callbacks[name]=fn}};
  vm.createContext(context);vm.runInContext(fs.readFileSync('dist/sw.js','utf8'),context);
  for(const name of ['install','activate']){let work;callbacks[name]({waitUntil:p=>work=p});await work}
  assert.deepEqual(deleted,['chacha-release-obsolete'],'only this app cache is cleaned');
