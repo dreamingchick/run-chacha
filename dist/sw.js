@@ -1,9 +1,17 @@
 'use strict';
-const CACHE = 'chacha-release-1.1.1-02db1a06f1d1';
-const FILES = ['./', './index.html', './style.css', './chacha.js', './pwa.js', './ranking.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
+const CACHE = 'chacha-release-1.1.2-392ca66d28ae';
+const FILES = ['./', './index.html', './play.html', './style.css', './chacha.js', './pwa.js', './ranking.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file=>new Request(new URL(file,self.location.href),{cache:'reload'})))));
-  // Let an existing game finish. A new release activates after old tabs close.
+ event.waitUntil((async()=>{
+  const cache=await caches.open(CACHE);
+  await Promise.all(FILES.map(async file=>{
+   const canonical=new URL(file,self.location.href),fresh=new URL(canonical);
+   fresh.searchParams.set('__chacha_release',CACHE);
+   const response=await fetch(new Request(fresh,{cache:'reload'}));
+   if(!response.ok)throw new Error('Precache failed');
+   await cache.put(canonical.href,response);
+  }));
+ })());
 });
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
