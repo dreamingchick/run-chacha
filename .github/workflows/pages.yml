@@ -28,6 +28,8 @@ jobs:
         run: node check.cjs
       - name: Check deployment files and offline cache
         run: node release-check.cjs
+      - name: Check online ranking behavior
+        run: node ranking-check.cjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game
