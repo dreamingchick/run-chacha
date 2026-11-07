@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "cache": "chacha-release-1.1.0-11788390e623",
+  "version": "1.1.1",
+  "cache": "chacha-release-1.1.1-02db1a06f1d1",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -15,6 +15,6 @@
     "pwa.js": "c3d8244dac9e1b20c5bed5c9160f7f71c0e8062d9873778d339b9a5f116098e9",
     "ranking.js": "e85d0d67026bea1815761e6784832818ddec34898ac8b1e87f2ee91a15dc1af4",
     "style.css": "1a947cdd037bc136d46cb3b9965465d3acacc9419e2d62a1c69e755379f29fe6",
-    "sw.js": "897f099b4134b678b677bd9c3d9d507b2ebf8ed174d961cda7be3683d844ad29"
+    "sw.js": "077f83a677919bbb314608e8a35dbcde44617343ad50e2598233f176527f74a9"
   }
 }
