@@ -1,8 +1,7 @@
 {
-  "version": "1.0.0",
-  "cache": "chacha-release-1.0.0-b8263a294f8f",
+  "version": "1.1.0",
+  "cache": "chacha-release-1.1.0-11788390e623",
   "files": {
-    "_headers": "9e523369ce2cadc09507edca2955eadc749b2893148ca44213a8ac6f801a279b",
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
     "assets/chowRun.jpg": "fceb3ee08d32a2bcddd4e36ec98c74f407ef6e75cd16d91c672fa8954e3af33a",
@@ -10,11 +9,12 @@
     "assets/icon-512.png": "d59f49aaf9caa2f7527d1b48b2c830fd36a098fdca1cf0b7d679a12395e29463",
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
-    "chacha.js": "5eb41b58d8d52513cd19817dace668629ff2690103daa0b27b37c2f6ef5b7dca",
-    "index.html": "a0a9bee074fad2d970e430e5af265acf3f3c9b34fa54f04694c2d3c1bbb32137",
+    "chacha.js": "95c9b2bdaa0581c3ddfc6f6cb964f77dd62e05fef3ea1ecdf51d0b86990f7781",
+    "index.html": "087689505763fb984cabe918da4185ff92e9f762bc14e433fb3cdd79f98c08bb",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
-    "pwa.js": "9887a0bf795d35792625e5b408bc0604cbe62c07af5d0b943140601e854baac6",
-    "style.css": "a4d286ea9b8dc3466122e922760c2cd14351e47b6ae5d62fec681c1aaeb181e3",
-    "sw.js": "db88d86784e70f902aaf20d1edd56782bbad9c4f5633b46a78000cde9e25da68"
+    "pwa.js": "c3d8244dac9e1b20c5bed5c9160f7f71c0e8062d9873778d339b9a5f116098e9",
+    "ranking.js": "e85d0d67026bea1815761e6784832818ddec34898ac8b1e87f2ee91a15dc1af4",
+    "style.css": "1a947cdd037bc136d46cb3b9965465d3acacc9419e2d62a1c69e755379f29fe6",
+    "sw.js": "897f099b4134b678b677bd9c3d9d507b2ebf8ed174d961cda7be3683d844ad29"
   }
 }
