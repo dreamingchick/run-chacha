@@ -26,7 +26,10 @@ async function loadImage(name){
  const crop=name==='radish'?[320,130,380,750]:[110,110,810,810];
  const cut=document.createElement('canvas');cut.width=crop[2];cut.height=crop[3];cut.getContext('2d').drawImage(c,...crop,0,0,cut.width,cut.height);images[name]=cut;
 }
-Promise.all(['chowRun','radish','cabbage'].map(loadImage)).then(()=>{$('start').disabled=false;$('start').innerHTML='함께 달리기 <b>↗</b>'}).catch(()=>{$('hint').textContent='이미지 일부를 불러오지 못했어요. 새로고침해 주세요.'});
+async function loadRunSheet(){
+ const im=new Image();im.src='assets/chacha-run-sheet.png';await im.decode();images.runSheet=im;
+}
+Promise.all([loadRunSheet(),...['radish','cabbage'].map(loadImage)]).then(()=>{$('start').disabled=false;$('start').innerHTML='함께 달리기 <b>↗</b>'}).catch(()=>{$('hint').textContent='이미지 일부를 불러오지 못했어요. 새로고침해 주세요.'});
 function resize(){const r=canvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,2);W=r.width<600?640:1000;H=W*r.height/r.width;ground=H*.72;canvas.width=Math.round(W*d);canvas.height=Math.round(H*d);ctx.setTransform(d,0,0,d,0,0)}
 new ResizeObserver(resize).observe(canvas);resize();
 function ellipse(x,y,rx,ry,color,rotation=0){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,rx,ry,rotation,0,TAU);ctx.fill()}
@@ -34,7 +37,7 @@ function line(points,color,width){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.
 function fluff(x,y,rx,ry,color,n=14){ellipse(x,y,rx,ry,color);for(let i=0;i<n;i++){const a=i*TAU/n;ellipse(x+Math.cos(a)*rx*.86,y+Math.sin(a)*ry*.85,rx*.22,ry*.24,color,a*.2)}}
 // Asymmetric gallop: hind push -> extended flight -> fore landing ->
 // gathered flight. Near/far feet land slightly apart, never as diagonal pairs.
-const STRIDE_DISTANCE=32/.28;
+const STRIDE_DISTANCE=190;
 function cycleSample(keys,p){
  p=((p%1)+1)%1;let i=0;while(i<keys.length-2&&p>=keys[i+1][0])i++;
  const a=keys[i],b=keys[i+1],before=keys[i-1]||[keys[keys.length-2][0]-1,...keys[keys.length-2].slice(1)],after=keys[i+2]||[keys[1][0]+1,...keys[1].slice(1)];
@@ -65,21 +68,21 @@ function drawLeg(l,far){
  ellipse(l.paw[0]+1.5,l.paw[1]-3.2,5.4,3.0,far?'#ca9656':'#f4c983');
  line([[l.paw[0]+3.8,l.paw[1]-3.4],[l.paw[0]+4.2,l.paw[1]-1.6]],outline,.65);
 }
-function drawDog(x,y,scale,phase,jump=0,vy=0,land=0){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);const air=clamp(jump/22,0,1),gait=gaitBody(phase),bob=gait.bob*(1-air)+land*3;const lean=air?clamp(vy/2800,-.12,.12):gait.pitch;
- const hindFar=legPose(phase,-30,bob,air,false,true),frontFar=legPose(phase,18,bob,air,true,true),hindNear=legPose(phase,-31,bob,air,false,false),frontNear=legPose(phase,17,bob,air,true,false);
- drawLeg(hindFar,true);drawLeg(frontFar,true);drawLeg(hindNear,false);drawLeg(frontNear,false);
- ctx.save();ctx.translate(-36,-41+bob);ctx.rotate(-.25+Math.sin(phase*TAU-.7)*.1);
- function tailCurve(color,width){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,6);ctx.bezierCurveTo(-29,-1,-34,-33,-14,-39);ctx.bezierCurveTo(9,-49,22,-20,3,-15);ctx.stroke()}
- tailCurve('#654126',22);tailCurve('#e9b972',18);tailCurve('#ffe3a7',10);ctx.restore();
- ctx.save();ctx.translate(-7,-35+bob);ctx.rotate(lean);ctx.scale(.85*mix(gait.stretch,1,air)*(1+land*.045),.85*mix(2-gait.stretch,1,air)*(1-land*.065));
- const coat=ctx.createLinearGradient(-10,-28,10,24);coat.addColorStop(0,'#f9d18a');coat.addColorStop(.55,'#e9ad5a');coat.addColorStop(1,'#bd793a');
- ctx.fillStyle=coat;ctx.strokeStyle='#6c4329';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-37,2);ctx.bezierCurveTo(-44,-13,-34,-21,-25,-24);ctx.lineTo(-28,-28);ctx.lineTo(-18,-25);ctx.bezierCurveTo(-3,-29,17,-23,27,-16);ctx.bezierCurveTo(45,-1,32,20,20,23);ctx.lineTo(22,18);ctx.bezierCurveTo(2,28,-18,23,-26,18);ctx.lineTo(-32,20);ctx.lineTo(-30,15);ctx.bezierCurveTo(-37,12,-40,9,-37,2);ctx.closePath();ctx.fill();ctx.stroke();
- line([[-32,-10],[-28,-16],[-19,-19]],'#ffe0a1',2.4);line([[-17,18],[-10,21],[-2,20]],'#f4c47b',2);line([[12,12],[18,16],[22,12]],'#cf8c45',1.2);ctx.restore();
- // The body overlaps the upper limbs to keep their roots inside the coat.
- // Retain the original face and mane, independently pivoted above the rig.
- ctx.save();ctx.translate(22,-53+bob*.9+Math.sin(phase*TAU-.5)*.8);ctx.rotate(lean*.6+Math.sin(phase*TAU-.8)*.025);fluff(0,0,25,30,'#c28343');if(images.chowRun){ctx.save();ctx.beginPath();ctx.ellipse(0,-1,30,35,0,0,TAU);ctx.clip();ctx.drawImage(images.chowRun,465,175,455,520,-30,-37,65,75);ctx.restore()}else{fluff(0,0,28,30,'#efbb70');ellipse(14,4,17,13,'#fae4af');ellipse(10,-8,2.4,3,'#39241c');ellipse(25,0,5,3,'#39241c');ellipse(-10,-24,7,10,'#cb8947')}
- // Small ear tips and mane follow-through lag the body's weight shift.
- ctx.restore();ctx.restore()}
+// Eight illustrated phases, fixed source cells and a shared foot baseline.
+function drawDog(x,y,scale,phase,jump=0,vy=0,land=0){
+ if(!images.runSheet)return;
+ const airborne=jump>.01;
+ const frame=airborne?(vy<0?3:4):Math.min(7,Math.floor((((phase%1)+1)%1)*8));
+ const cw=images.runSheet.width/4,ch=images.runSheet.height/2;
+ ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+ if(airborne)ctx.rotate(clamp(vy/7000,-.08,.08));
+ // Match the previous actor's visible width and feet position; collision is unchanged.
+ const unit=120/cw,squash=clamp(land,0,1)*.035;
+ ctx.scale(1+squash,1-squash);
+ ctx.drawImage(images.runSheet,(frame%4)*cw,Math.floor(frame/4)*ch,cw,ch,-60,-ch*.77*unit,120,ch*unit);
+ ctx.restore();
+}
+
 function shadow(x,y,size,jump){ellipse(x,y+3,size*(1-clamp(jump/300,0,.5)),size*.10,'#080d0870')}
 function addDust(x,y,n=2){for(let i=0;i<n;i++)app.dust.push({x,y,vx:-25-Math.random()*35,vy:-15-Math.random()*25,life:.45,size:2+Math.random()*3})}
 function beep(freq,duration,type='sine'){if(!app.sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.6,audio.currentTime+duration);g.gain.setValueAtTime(.06,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch{}}
