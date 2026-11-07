@@ -1,0 +1,31 @@
+// Deterministic simulation checks without browser/network dependencies.
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+function sandbox(){const nodes={},storage={};const gradient={addColorStop(){}};const context=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>o[k]||(()=>{})});function node(id){return nodes[id]??={value:0,hidden:false,disabled:false,textContent:'',innerHTML:'',setAttribute(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>context,addEventListener(){}}}const box={document:{getElementById:node,createElement:()=>node('temp'),addEventListener(){}},window:{addEventListener(){}},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};box.Math.random=()=>.5;vm.createContext(box);vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame};',box);return box.api}
+for(const hz of [30,60,120,144]){const a=sandbox();a.start();a.app.spawn=1000;a.frame(100);for(let i=1;i<=hz*2;i++)a.frame(100+i*1000/hz);a.render();assert(a.app.distance>41&&a.app.distance<42);console.log(hz+'Hz distance '+a.app.distance.toFixed(4))}
+const a=sandbox();a.start();a.app.spawn=1000;a.jump();const first=a.app.vy;a.jump();assert.equal(a.app.vy,first,'no double jump');let apex=0;for(let i=0;i<90;i++){a.update(1/120);apex=Math.max(apex,a.app.jumpY)}assert(apex>110&&apex<125,'jump height');assert.equal(a.app.jumpY,0,'landed');a.pause();const phase=a.app.phase,distance=a.app.distance;a.update(1);assert.equal(a.app.phase,phase);assert.equal(a.app.distance,distance);a.pause();a.app.obstacles=[{x:100,w:38,h:46,name:'radish'}];a.update(1/120);assert.equal(a.app.mode,'over');a.start();assert.equal(a.app.obstacles.length,0);assert.equal(a.app.mode,'play');a.preview();a.app.frozen=true;const before=a.app.phase;a.update(1);assert.equal(a.app.phase,before);
+for(let p=0;p<1;p+=.001){const l=a.legPose(p,-30,3,0,false,false);assert(l.paw.every(Number.isFinite)&&l.knee.every(Number.isFinite));if(l.stance)assert.equal(l.paw[1],0,'stance paw on track')}
+console.log('PASS: jump/landing, pause, collision/restart, scrub freeze, 1000 gait positions');
+
+
+let flight=0;
+for(let i=0;i<1000;i++){
+ const phase=i/1000,bob=a.gaitBody(phase).bob;
+ const legs=[];
+ for(const front of [false,true])for(const far of [false,true]){
+  const l=a.legPose(phase,front?17:-31,bob,0,front,far);legs.push(l);
+  const target=l.hock||[l.paw[0],l.paw[1]-2],length=front?19:17;
+  assert(Math.abs(Math.hypot(l.knee[0]-l.hip[0],l.knee[1]-l.hip[1])-length)<1e-8);
+  assert(Math.abs(Math.hypot(l.knee[0]-target[0],l.knee[1]-target[1])-length)<1e-8,'no overextended lower bone');
+  assert(l.paw[1]<=0,'no foot below track');
+  if(l.stance)assert.equal(l.paw[1],0);
+ }
+ if(legs.every(l=>!l.stance)){flight++;assert(legs.every(l=>l.paw[1]<0||Math.abs(l.p-.28)<1e-8),'all paws above track during flight')}
+ assert.equal(a.groundContact(phase),legs.some(l=>l.stance));
+}
+assert(flight>300&&flight<400,'visible suspension during gallop');
+for(const front of [false,true])for(const far of [false,true])for(const phase of [0,.28,.4,.68,1]){
+ const before=a.legPose((phase-1e-7+1)%1,17,a.gaitBody((phase-1e-7+1)%1).bob,0,front,far);
+ const after=a.legPose((phase+1e-7)%1,17,a.gaitBody((phase+1e-7)%1).bob,0,front,far);
+ assert(Math.hypot(before.paw[0]-after.paw[0],before.paw[1]-after.paw[1])<.001,'continuous foot trajectory');
+}
+console.log('PASS: 4,000 joint poses, continuous feet, '+flight/10+'% airborne gallop');
