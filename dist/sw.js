@@ -1,8 +1,8 @@
 'use strict';
-const CACHE = 'chacha-release-1.1.0-11788390e623';
+const CACHE = 'chacha-release-1.1.1-02db1a06f1d1';
 const FILES = ['./', './index.html', './style.css', './chacha.js', './pwa.js', './ranking.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file=>new Request(new URL(file,self.location.href),{cache:'reload'})))));
   // Let an existing game finish. A new release activates after old tabs close.
 });
 self.addEventListener('activate', event => {
