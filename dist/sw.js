@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'chacha-release-sprite-20261108-v1';
-const FILES = ['./assets/chacha-run-sheet.png', './chacha.js?v=sprite-20261108', './chacha.js?v=sprite-20261108', './', './index.html', './play.html', './style.css?v=1.1.2', './chacha.js?v=1.1.2', './ranking.js?v=1.1.2', './pwa.js?v=1.1.2', './style.css', './chacha.js', './pwa.js', './ranking.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
+const CACHE = 'chacha-release-1.3.0-gallop-v2';
+const FILES = ['./assets/chacha-gallop-sheet.png', './chacha.js?v=gallop-v2', './ranking.js?v=gallop-v2', './assets/chacha-run-sheet.png', './chacha.js?v=sprite-20261108', './chacha.js?v=sprite-20261108', './', './index.html', './play.html', './style.css?v=1.1.2', './chacha.js?v=1.1.2', './ranking.js?v=1.1.2', './pwa.js?v=1.1.2', './style.css', './chacha.js', './pwa.js', './ranking.js', './manifest.webmanifest', './assets/chowRun.jpg', './assets/radish.jpg', './assets/cabbage.jpg', './assets/icon-192.png', './assets/icon-512.png', './assets/icon-maskable.png', './assets/apple-touch-icon.png'];
 self.addEventListener('install', event => {
  event.waitUntil((async()=>{
   const cache=await caches.open(CACHE);

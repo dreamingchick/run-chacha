@@ -10,8 +10,8 @@ async function rpc(name:string,body:unknown){
  const response=await fetch(Deno.env.get('SUPABASE_URL')+'/rest/v1/rpc/'+name,{method:'POST',headers:auth,body:JSON.stringify(body)});
  const data=await response.json();if(!response.ok)throw new Error(data.message||'DATABASE_UNAVAILABLE');return data;
 }
-export function scoreForTicks(ticks:number){
- const base=259.2,increment=.0525,growth=1+increment/1500;
+export function scoreForTicks(ticks:number,version=1){
+ const base=version===2?311.04:259.2,increment=.0525,growth=1+increment/1500;
  const cap=Math.ceil(Math.log(900/base)/Math.log(growth)),n=Math.min(ticks,cap);
  return Math.floor(base/increment*Math.expm1(n*Math.log(growth))+Math.max(0,ticks-cap)*.6);
 }
@@ -34,7 +34,7 @@ Deno.serve(async request=>{
    const nickname=typeof body.nickname==='string'?body.nickname.normalize('NFKC').trim():'';
    if(!/^[\p{L}\p{N} _-]{2,12}$/u.test(nickname))return reply({error:'닉네임은 한글·영문·숫자 등 2~12자로 입력해 주세요.'},400);
    if(!Number.isSafeInteger(body.ticks)||body.ticks<1||body.ticks>432000||typeof body.runId!=='string'||!/^[0-9a-f-]{36}$/i.test(body.runId))return reply({error:'유효하지 않은 게임 기록입니다.'},400);
-   return reply(await rpc('chacha_submit_score',{p_player_hash:playerHash,p_run_id:body.runId,p_nickname:nickname,p_ticks:body.ticks,p_distance:scoreForTicks(body.ticks)}));
+   return reply(await rpc('chacha_submit_score',{p_player_hash:playerHash,p_run_id:body.runId,p_nickname:nickname,p_ticks:body.ticks,p_distance:scoreForTicks(body.ticks,body.gameVersion===2?2:1)}));
   }
   return reply({error:'알 수 없는 요청입니다.'},400);
  }catch(error){

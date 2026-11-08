@@ -12,7 +12,7 @@
  try{el('rankNickname').value=localStorage.getItem('chacha_nickname')||''}catch{}
  async function api(action,data={}){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
-  try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':publishableKey},body:JSON.stringify({action,playerToken:token,...data}),signal:controller.signal});
+  try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':publishableKey},body:JSON.stringify({action,gameVersion:2,playerToken:token,...data}),signal:controller.signal});
    const body=await response.json();if(!response.ok)throw new Error(body.error||'랭킹을 불러오지 못했어요.');return body;
   }finally{clearTimeout(timer)}
  }

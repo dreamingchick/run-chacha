@@ -4,7 +4,7 @@
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('game'), ctx=canvas.getContext('2d');
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t;
-const START_SPEED=216*1.2;
+const START_SPEED=216*1.2*1.2;
 const app={mode:'preview',time:0,phase:0,rate:1,slow:false,frozen:false,distance:0,speed:START_SPEED,scroll:0,spawn:1.5,obstacles:[],dust:[],jumpY:0,vy:0,land:0,buffer:0,best:0,sound:false};
 let W=1000,H=392, ground=290, last=0, accumulator=0,audio;
 try{const saved=Number(localStorage.getItem('chow_high_score'));app.best=Number.isFinite(saved)&&saved>=0?Math.floor(saved):0}catch{}
@@ -27,7 +27,7 @@ async function loadImage(name){
  const cut=document.createElement('canvas');cut.width=crop[2];cut.height=crop[3];cut.getContext('2d').drawImage(c,...crop,0,0,cut.width,cut.height);images[name]=cut;
 }
 async function loadRunSheet(){
- const im=new Image();im.src='assets/chacha-run-sheet.png';await im.decode();images.runSheet=im;
+ const im=new Image();im.src='assets/chacha-gallop-sheet.png';await im.decode();images.runSheet=im;
 }
 Promise.all([loadRunSheet(),...['radish','cabbage'].map(loadImage)]).then(()=>{$('start').disabled=false;$('start').innerHTML='함께 달리기 <b>↗</b>'}).catch(()=>{$('hint').textContent='이미지 일부를 불러오지 못했어요. 새로고침해 주세요.'});
 function resize(){const r=canvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,2);W=r.width<600?640:1000;H=W*r.height/r.width;ground=H*.72;canvas.width=Math.round(W*d);canvas.height=Math.round(H*d);ctx.setTransform(d,0,0,d,0,0)}
@@ -37,7 +37,7 @@ function line(points,color,width){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.
 function fluff(x,y,rx,ry,color,n=14){ellipse(x,y,rx,ry,color);for(let i=0;i<n;i++){const a=i*TAU/n;ellipse(x+Math.cos(a)*rx*.86,y+Math.sin(a)*ry*.85,rx*.22,ry*.24,color,a*.2)}}
 // Asymmetric gallop: hind push -> extended flight -> fore landing ->
 // gathered flight. Near/far feet land slightly apart, never as diagonal pairs.
-const STRIDE_DISTANCE=190;
+const STRIDE_DISTANCE=145;
 function cycleSample(keys,p){
  p=((p%1)+1)%1;let i=0;while(i<keys.length-2&&p>=keys[i+1][0])i++;
  const a=keys[i],b=keys[i+1],before=keys[i-1]||[keys[keys.length-2][0]-1,...keys[keys.length-2].slice(1)],after=keys[i+2]||[keys[1][0]+1,...keys[1].slice(1)];
@@ -72,14 +72,14 @@ function drawLeg(l,far){
 function drawDog(x,y,scale,phase,jump=0,vy=0,land=0){
  if(!images.runSheet)return;
  const airborne=jump>.01;
- const frame=airborne?(vy<0?3:4):Math.min(7,Math.floor((((phase%1)+1)%1)*8));
+ const frame=airborne?(vy<0?2:5):Math.min(7,Math.floor((((phase%1)+1)%1)*8));
  const cw=images.runSheet.width/4,ch=images.runSheet.height/2;
  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
  if(airborne)ctx.rotate(clamp(vy/7000,-.08,.08));
  // Match the previous actor's visible width and feet position; collision is unchanged.
- const unit=120/cw,squash=clamp(land,0,1)*.035;
+ const spriteWidth=154;const unit=spriteWidth/cw,squash=clamp(land,0,1)*.035;
  ctx.scale(1+squash,1-squash);
- ctx.drawImage(images.runSheet,(frame%4)*cw,Math.floor(frame/4)*ch,cw,ch,-60,-ch*.77*unit,120,ch*unit);
+ ctx.drawImage(images.runSheet,(frame%4)*cw,Math.floor(frame/4)*ch,cw,ch,-spriteWidth/2,-(frame<4?369:356)*unit,spriteWidth,ch*unit);
  ctx.restore();
 }
 
@@ -92,7 +92,7 @@ function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start
 function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;$('result').hidden=true;$('start').hidden=false;$('jump').hidden=false;$('pause').hidden=true;$('jumpMobile').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 터치로 점프'}
 function pause(){if(app.mode==='play'){app.mode='paused';$('pause').textContent='계속 달리기 ▷';$('modeLabel').textContent='차차, 쉬는 중'}else if(app.mode==='paused'){app.mode='play';$('pause').textContent='잠깐 쉬기 Ⅱ';$('modeLabel').textContent='차차, 달리는 중!'}}
 function gameOver(){app.mode='over';beep(160,.35,'triangle');const score=Math.floor(app.distance),isNew=score>app.best;app.best=Math.max(score,app.best);try{localStorage.setItem('chow_high_score',String(app.best))}catch{}$('best').innerHTML=app.best+' <small>m</small>';$('final').textContent=score;$('resultNote').textContent=isNew?'새로운 최고 기록! 차차, 멋진데?':'다음에는 조금 더 멀리!';$('result').hidden=false;$('pause').hidden=true;$('jumpMobile').hidden=true;window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks}}))}
-function update(dt){if(app.mode==='paused'||app.mode==='over')return;const previewing=app.mode==='preview';if(previewing&&app.frozen)return;const motionRate=previewing?app.rate*(app.slow?.25:1):1;const t=dt*motionRate;app.time+=t;app.buffer=Math.max(0,app.buffer-t);app.land*=Math.exp(-t*17);const speed=previewing?216*app.rate:app.speed;app.scroll+=speed*dt*(previewing?Math.min(2.85,(ground-90)/100):1)*(previewing&&app.slow?.25:1);if(app.jumpY<=.01){app.phase=(app.phase+speed*t/(STRIDE_DISTANCE*(previewing?app.rate:.92)))%1}else{app.vy+=2340*t;app.jumpY-=app.vy*t;if(app.jumpY<=0){app.jumpY=0;app.vy=0;app.land=1;addDust(actorX(),ground,6);if(app.buffer>0)jump()}}
+function update(dt){if(app.mode==='paused'||app.mode==='over')return;const previewing=app.mode==='preview';if(previewing&&app.frozen)return;const motionRate=previewing?app.rate*(app.slow?.25:1):1;const t=dt*motionRate;app.time+=t;app.buffer=Math.max(0,app.buffer-t);app.land*=Math.exp(-t*17);const speed=previewing?START_SPEED*app.rate:app.speed;app.scroll+=speed*dt*(previewing?Math.min(2.85,(ground-90)/100):1)*(previewing&&app.slow?.25:1);if(app.jumpY<=.01){app.phase=(app.phase+speed*t/(STRIDE_DISTANCE*(previewing?app.rate:.92)))%1}else{app.vy+=2340*t;app.jumpY-=app.vy*t;if(app.jumpY<=0){app.jumpY=0;app.vy=0;app.land=1;addDust(actorX(),ground,6);if(app.buffer>0)jump()}}
  if(!previewing){app.runTicks=(app.runTicks||0)+1;app.distance+=app.speed*t*.08;app.speed=Math.min(900,START_SPEED+app.distance/400*21);app.spawn-=t;if(app.spawn<=0){const radish=Math.random()<.5;app.obstacles.push({x:W+40,w:radish?38:44,h:radish?46:42,name:radish?'radish':'cabbage'});app.spawn=Math.max(.85,1.8-app.speed/1100)+Math.random()*.6}for(const o of app.obstacles){o.x-=app.speed*t;const px=actorX();if(px+20>o.x+7&&px-19<o.x+o.w-7&&ground-app.jumpY-9>ground-o.h+7&&ground-app.jumpY-52<ground-6){gameOver();break}}app.obstacles=app.obstacles.filter(o=>o.x+o.w>-50);$('distance').textContent=Math.floor(app.distance)+' m';$('pace').textContent=(app.speed/START_SPEED).toFixed(1)+'× PACE'}
  for(const p of app.dust){p.x+=p.vx*t;p.y+=p.vy*t;p.life-=t}app.dust=app.dust.filter(p=>p.life>0);if(app.jumpY===0&&groundContact(app.phase)&&Math.random()<dt*12)addDust(actorX()-20,ground-1,1);if(previewing)$('phase').value=app.phase}
 function render(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#1c241b';ctx.fillRect(0,0,W,H);const glow=ctx.createRadialGradient(W*.49,H*.52,5,W*.49,H*.52,W*.43);glow.addColorStop(0,'#c2d88c0c');glow.addColorStop(1,'#c2d88c00');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
