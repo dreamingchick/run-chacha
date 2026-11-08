@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "python3 scripts/restore-assets.py && node check.cjs && node release-check.cjs && node ranking-check.cjs",
+  "outputDirectory": "dist"
+}
