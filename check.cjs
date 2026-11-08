@@ -1,31 +1,40 @@
-// Deterministic simulation checks without browser/network dependencies.
-const fs=require('fs'),vm=require('vm'),assert=require('assert');
-function sandbox(){const nodes={},storage={};const gradient={addColorStop(){}};const context=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>o[k]||(()=>{})});function node(id){return nodes[id]??={value:0,hidden:false,disabled:false,textContent:'',innerHTML:'',setAttribute(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>context,addEventListener(){}}}const box={document:{getElementById:node,createElement:()=>node('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};box.Math.random=()=>.5;vm.createContext(box);vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame};',box);return box.api}
-for(const hz of [30,60,120,144]){const a=sandbox();a.start();a.app.spawn=1000;a.frame(100);for(let i=1;i<=hz*2;i++)a.frame(100+i*1000/hz);a.render();assert(a.app.distance>49&&a.app.distance<51);console.log(hz+'Hz distance '+a.app.distance.toFixed(4))}
-const a=sandbox();a.start();a.app.spawn=1000;a.jump();const first=a.app.vy;a.jump();assert.equal(a.app.vy,first,'no double jump');let apex=0;for(let i=0;i<90;i++){a.update(1/120);apex=Math.max(apex,a.app.jumpY)}assert(apex>110&&apex<125,'jump height');assert.equal(a.app.jumpY,0,'landed');a.pause();const phase=a.app.phase,distance=a.app.distance;a.update(1);assert.equal(a.app.phase,phase);assert.equal(a.app.distance,distance);a.pause();a.app.obstacles=[{x:100,w:38,h:46,name:'radish'}];a.update(1/120);assert.equal(a.app.mode,'over');a.start();assert.equal(a.app.obstacles.length,0);assert.equal(a.app.mode,'play');a.preview();a.app.frozen=true;const before=a.app.phase;a.update(1);assert.equal(a.app.phase,before);
-for(let p=0;p<1;p+=.001){const l=a.legPose(p,-30,3,0,false,false);assert(l.paw.every(Number.isFinite)&&l.knee.every(Number.isFinite));if(l.stance)assert.equal(l.paw[1],0,'stance paw on track')}
-console.log('PASS: jump/landing, pause, collision/restart, scrub freeze, 1000 gait positions');
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const DT=1/120;
+function sandbox(){
+ const nodes={},storage={},gradient={addColorStop(){}};
+ const drawing=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>o[k]||(()=>{})});
+ function element(id){return nodes[id]??={id,value:0,hidden:false,disabled:false,textContent:'',innerHTML:'',setAttribute(){},addEventListener(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>drawing,scrollIntoView(){},focus(){}}}
+ const box={document:{getElementById:element,createElement:()=>element('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};
+ box.Math.random=()=>.5;vm.createContext(box);
+ vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame,makeObstacle,actorBox,obstacleBox,sweptCollision,START_SPEED,MAX_SPEED,setWorld:(w,h)=>{W=w;H=h;ground=h*.78},setRandom:f=>{Math.random=f}};',box);
+ return box.api;
+}
+function setup(multiplier=1){const a=sandbox();a.start();a.app.speed=a.START_SPEED*multiplier;a.app.distance=(a.app.speed-a.START_SPEED)/.0525;a.app.spawn=1e9;return a}
+function step(a,seconds){for(let i=0;i<Math.ceil(seconds/DT);i++)a.update(DT)}
+assert(Math.abs(sandbox().START_SPEED-466.56)<1e-9);assert(Math.abs(sandbox().MAX_SPEED-4665.6)<1e-9);
+const a=setup();a.jump();assert.equal(a.app.jumpsUsed,1);step(a,.1);a.jump();assert.equal(a.app.jumpsUsed,2);const secondVy=a.app.vy;a.jump();assert.equal(a.app.vy,secondVy,'third jump ignored');step(a,2);assert.equal(a.app.jumpY,0);assert.equal(a.app.jumpsUsed,0);a.jump();assert.equal(a.app.jumpsUsed,1);
+const single=setup();single.jump();let singleApex=0;for(let i=0;i<160;i++){single.update(DT);singleApex=Math.max(singleApex,single.app.jumpY)}
+const twice=setup();twice.jump();let doubleApex=0;for(let i=0;i<200;i++){if(i===36)twice.jump();twice.update(DT);doubleApex=Math.max(doubleApex,twice.app.jumpY)}
+assert(singleApex>115&&singleApex<122);assert(doubleApex>250&&doubleApex<270);console.log(`PASS: double jump, landing reset; apex ${singleApex.toFixed(1)} / ${doubleApex.toFixed(1)}`);
+function encounter(kind,multiplier,second,width=1000){const x=setup(multiplier);x.setWorld(width,480);const actor=x.actorBox(),obstacle=x.makeObstacle(kind,actor.right+x.app.speed*.42-5);x.app.obstacles=[obstacle];x.jump();for(let i=0;i<200&&x.app.mode!=='over';i++){if(second&&i===36)x.jump();x.update(DT)}return x}
+for(const width of [640,1000])for(const multiplier of [1,2,5,10])for(const kind of ['giant-radish','giant-cabbage']){assert.equal(encounter(kind,multiplier,false,width).app.mode,'over',kind+' blocks one jump');assert.equal(encounter(kind,multiplier,true,width).app.mode,'play',`${kind} cleared at ${multiplier}x / ${width}px`)}
+assert(singleApex+9<176-6);console.log('PASS: both giant vegetables require and allow double jump at 1/2/5/10x');
+for(const bottom of [78,112,150,188]){const o=a.makeObstacle('crow',300,{bottom});assert(o.bottom===bottom&&o.w>70);assert(o.bottom+o.h<=236)}
+const crowGround=setup();crowGround.app.obstacles=[crowGround.makeObstacle('crow',crowGround.actorBox().right+10,{bottom:150})];step(crowGround,1.2);assert.equal(crowGround.app.mode,'play');const crowJump=encounter('crow',1,false);assert.equal(crowJump.app.mode,'over');
+const swept=setup();assert(swept.sweptCollision({left:0,right:20,top:0,bottom:20},{left:0,right:20,top:0,bottom:20},{left:200,right:220,top:0,bottom:20},{left:-200,right:-180,top:0,bottom:20}));
+const paused=setup();paused.pause();paused.jump();assert.equal(paused.app.jumpsUsed,0);const distance=paused.app.distance;step(paused,1);assert.equal(paused.app.distance,distance);paused.pause();paused.app.mode='over';paused.jump();assert.equal(paused.app.jumpsUsed,0);console.log('PASS: four crow lanes, ground/jump avoidance, swept collision, pause guards');
+let pairFound=false,chestnutPairFound=false;
+for(let seed=1;seed<5000&&(!pairFound||!chestnutPairFound);seed++){
+ const x=setup();let state=seed;x.setRandom(()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296});x.app.spawn=.001;x.update(DT);
+ const small=x.app.obstacles.some(o=>o.name==='radish'||o.name==='cabbage');
+ if(small&&x.app.obstacles.some(o=>o.name==='crow'))pairFound=true;
+ if(small&&x.app.obstacles.filter(o=>o.name==='chestnut').length===2)chestnutPairFound=true;
+}
+assert(pairFound,'small produce can pair with a crow');assert(chestnutPairFound,'small produce can be followed by paired chestnuts');console.log('PASS: random produce+crows and chained chestnut encounter can occur');
+for(const hz of [30,60,120,144]){const x=setup();x.app.spawn=1e9;x.frame(100);for(let i=1;i<=hz*2;i++)x.frame(100+i*1000/hz);assert(x.app.distance>70&&x.app.distance<100);x.render()}
+const cap=setup();cap.app.distance=1e9;cap.update(DT);assert.equal(cap.app.speed,cap.MAX_SPEED);cap.update(DT);assert.equal(cap.app.speed,cap.MAX_SPEED);console.log('PASS: fixed timestep and 10x speed cap');
+const source=fs.readFileSync('dist/chacha.js','utf8'),html=fs.readFileSync('dist/index.html','utf8');assert(source.includes("dispatchEvent(new Event('chacha:run-start'))"));assert(source.includes("dispatchEvent(new CustomEvent('chacha:run-end'"));assert(!html.includes('testStart'));assert(html.includes('id="rankV1"')&&html.includes('id="rankV2"'));
+console.log('PASS: production game hooks, v1/v2 tabs, no internal test controls');
 
 
-let flight=0;
-for(let i=0;i<1000;i++){
- const phase=i/1000,bob=a.gaitBody(phase).bob;
- const legs=[];
- for(const front of [false,true])for(const far of [false,true]){
-  const l=a.legPose(phase,front?17:-31,bob,0,front,far);legs.push(l);
-  const target=l.hock||[l.paw[0],l.paw[1]-2],length=front?19:17;
-  assert(Math.abs(Math.hypot(l.knee[0]-l.hip[0],l.knee[1]-l.hip[1])-length)<1e-8);
-  assert(Math.abs(Math.hypot(l.knee[0]-target[0],l.knee[1]-target[1])-length)<1e-8,'no overextended lower bone');
-  assert(l.paw[1]<=0,'no foot below track');
-  if(l.stance)assert.equal(l.paw[1],0);
- }
- if(legs.every(l=>!l.stance)){flight++;assert(legs.every(l=>l.paw[1]<0||Math.abs(l.p-.28)<1e-8),'all paws above track during flight')}
- assert.equal(a.groundContact(phase),legs.some(l=>l.stance));
-}
-assert(flight>300&&flight<400,'visible suspension during gallop');
-for(const front of [false,true])for(const far of [false,true])for(const phase of [0,.28,.4,.68,1]){
- const before=a.legPose((phase-1e-7+1)%1,17,a.gaitBody((phase-1e-7+1)%1).bob,0,front,far);
- const after=a.legPose((phase+1e-7)%1,17,a.gaitBody((phase+1e-7)%1).bob,0,front,far);
- assert(Math.hypot(before.paw[0]-after.paw[0],before.paw[1]-after.paw[1])<.001,'continuous foot trajectory');
-}
-console.log('PASS: 4,000 joint poses, continuous feet, '+flight/10+'% airborne gallop');

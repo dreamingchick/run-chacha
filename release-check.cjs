@@ -1,10 +1,11 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),{spawnSync}=require('node:child_process');
 process.chdir(__dirname);
-for(const file of ['dist/chacha.js','dist/pwa.js','dist/sw.js','check.cjs']){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});assert.equal(result.status,0,result.stderr)}
+for(const file of ['dist/chacha.js','dist/ranking.js','dist/notices.js','dist/pwa.js','dist/sw.js','check.cjs']){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});assert.equal(result.status,0,result.stderr)}
 const html=fs.readFileSync('dist/index.html','utf8'),css=fs.readFileSync('dist/style.css','utf8');
 for(const value of html.matchAll(/(?:src|href)="([^"]+)"/g)){const file=value[1].split('?')[0];if(file==='./')continue;assert(!file.startsWith('http'),'self-contained runtime');assert(fs.existsSync(path.join('dist',file)),file)}
 assert(!/@import|url\(https?:/.test(css),'no network font/CDN dependency');
+assert(fs.existsSync('dist/patch-notes.html'),'patch note history exists');assert(html.includes('id="patchNotice"')&&html.includes('id="rankingNotice"'),'first visit announcements exist');
 const manifest=JSON.parse(fs.readFileSync('dist/manifest.webmanifest','utf8'));
 assert.equal(manifest.scope,'./');assert.equal(manifest.start_url,'./');
 for(const icon of manifest.icons){const b=fs.readFileSync('dist/'+icon.src);assert.equal(b.subarray(1,4).toString(),'PNG');const size=Number(icon.sizes.split('x')[0]);assert.equal(b.readUInt32BE(16),size);assert.equal(b.readUInt32BE(20),size)}
@@ -16,9 +17,10 @@ async function serviceWorkerCheck(){
  vm.createContext(context);vm.runInContext(fs.readFileSync('dist/sw.js','utf8'),context);
  for(const name of ['install','activate']){let work;callbacks[name]({waitUntil:p=>work=p});await work}
  context.fetch=async()=>{throw Error('offline')};assert.deepEqual(deleted,['chacha-release-obsolete'],'only this app cache is cleaned');
- for(const route of ['', 'index.html', 'style.css','chacha.js','pwa.js','chacha.js?v=1.1.2','chacha.js?v=sprite-20261108','chacha.js?v=gallop-v2','ranking.js?v=gallop-v2','assets/chacha-gallop-sheet.png','assets/chacha-run-sheet.png','ranking.js?v=1.1.2','play.html','assets/chowRun.jpg','manifest.webmanifest']){let work;callbacks.fetch({request:{url:base+route,method:'GET',mode:route===''||route==='index.html'?'navigate':'cors'},respondWith:p=>work=p});const response=await work;assert(response?.ok,route+' works offline below a subdirectory')}
+ for(const route of ['', 'index.html', 'style.css?v=2.0.0','chacha.js?v=2.0.0','ranking.js?v=2.0.0','pwa.js?v=2.0.0','notices.js?v=2.0.0','patch-notes.html','assets/chacha-gallop-sheet.png','assets/chacha-run-sheet.png','play.html','assets/chowRun.jpg','manifest.webmanifest']){let work;callbacks.fetch({request:{url:base+route,method:'GET',mode:route===''||route==='index.html'?'navigate':'cors'},respondWith:p=>work=p});const response=await work;assert(response?.ok,route+' works offline below a subdirectory')}
  let intercepted=false;callbacks.fetch({request:{url:'https://other.test/private',method:'GET'},respondWith:()=>intercepted=true});assert.equal(intercepted,false);
  callbacks.fetch({request:{url:base,method:'POST'},respondWith:()=>intercepted=true});assert.equal(intercepted,false);
  console.log('PASS: deployment file references, no external runtime dependencies, icon sizes, offline cache and subdirectory scope');
 }
 serviceWorkerCheck().catch(error=>{console.error(error);process.exitCode=1});
+
