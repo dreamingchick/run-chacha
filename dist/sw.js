@@ -1,8 +1,8 @@
 'use strict';
-const CACHE = 'chacha-release-2.0.2-countryside';
+const CACHE = 'chacha-release-2.0.3-countryside';
 const FILES = [
  './','./index.html','./play.html','./patch-notes.html',
- './style.css?v=2.0.2','./chacha.js?v=2.0.2','./ranking.js?v=2.0.2','./pwa.js?v=2.0.2','./notices.js?v=2.0.2',
+ './style.css?v=2.0.3','./chacha.js?v=2.0.3','./ranking.js?v=2.0.3','./pwa.js?v=2.0.3','./notices.js?v=2.0.3',
  './manifest.webmanifest','./assets/chowRun.jpg','./assets/radish.jpg','./assets/cabbage.jpg',
  './assets/chacha-run-sheet.png','./assets/chacha-gallop-sheet.png','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable.png','./assets/apple-touch-icon.png'
 ];

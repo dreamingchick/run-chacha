@@ -123,6 +123,22 @@ function makeObstacle(kind='random',atX,options={}){
  const giant=kind.startsWith('giant-'),name=kind.replace('giant-','');
  return {name,kind,giant,w:giant?(name==='radish'?88:154):(name==='radish'?38:44),h:giant?176:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
 }
+function smallSpacing(previous,next,speed){
+ // Speed grows at 0.42%/second. Bound acceleration through the off-screen
+ // lead and all three jumps; reserve flight, landing reaction and body width.
+ const arrivalSpeed=Math.min(MAX_SPEED,speed*Math.exp(.0042*8));
+ return previous.w+47+arrivalSpeed*(2*JUMP_SPEED/GRAVITY+.22);
+}
+function makeEncounter(atX,speed){
+ const first=makeObstacle('random',atX),pattern=[first];
+ if(first.giant||first.name==='crow')return pattern;
+ const roll=Math.random(),count=roll<.35?1:roll<.7?2:3;
+ for(let i=1;i<count;i++){
+  const next=makeObstacle(Math.random()<.5?'radish':'cabbage',0),previous=pattern[i-1];
+  next.x=previous.x+smallSpacing(previous,next,speed);pattern.push(next);
+ }
+ return pattern;
+}
 function actorBox(y=app.jumpY){const x=actorX();return {left:x-23,right:x+24,top:ground-y-68,bottom:ground-y-9}}
 function obstacleBox(o,x=o.x){const pad=o.name==='crow'?7:5;return {left:x+pad,right:x+o.w-pad,top:ground-o.bottom-o.h+6,bottom:ground-o.bottom-5}}
 function overlaps(a,b){return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top}
@@ -154,11 +170,9 @@ function update(dt){
   app.runTicks++;app.distance+=app.speed*t*.08;
   app.speed=Math.min(MAX_SPEED,Math.max(START_SPEED,START_SPEED+app.distance*.0525));
   app.spawn-=t;
-  // A single encounter occupies the course at a time. No crow/vegetable
-  // stacks or trailing chestnut chains; retain full double-jump recovery.
+  // One encounter at a time; only small ground vegetables form sequences.
   if(app.spawn<=0&&app.obstacles.length===0){
-   const next=makeObstacle('random',W+app.speed*1.15);
-   app.obstacles.push(next);app.spawn=0;
+   app.obstacles.push(...makeEncounter(W+app.speed*1.15,app.speed));app.spawn=0;
   }
   const newActor=actorBox();
   for(const o of app.obstacles){
