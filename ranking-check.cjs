@@ -14,15 +14,17 @@ const responses=[],calls=[];const context={document:doc,window:{addEventListener
 const tick=()=>new Promise(r=>setImmediate(r));
 (async()=>{
  vm.createContext(context);vm.runInContext(fs.readFileSync('dist/ranking.js','utf8'),context);await tick();
- assert.equal(nodes.rankingEmpty.hidden,false);assert.equal(calls[0].action,'top');assert.equal(calls[0].rankingVersion,2);assert.equal(calls[0].scoreVersion,3);
+ assert.equal(nodes.rankingEmpty.hidden,false);assert.equal(calls[0].action,'top');assert.equal(calls[0].rankingVersion,3);assert.equal(calls[0].scoreVersion,3);
  nodes.rankV1.click();await tick();assert.equal(calls.at(-1).rankingVersion,1);assert.equal(nodes.rankingForm.hidden,true);
- nodes.rankV2.click();await tick();assert.equal(calls.at(-1).rankingVersion,2);assert.equal(nodes.rankingForm.hidden,false);
- responses.push({runId:'11111111-1111-4111-8111-111111111111'});listeners['chacha:run-start']();await tick();assert.equal(calls.at(-1).rankingVersion,2);
+ nodes.rankV2.click();await tick();assert.equal(calls.at(-1).rankingVersion,2);assert.equal(nodes.rankingForm.hidden,true);
+ nodes.rankV3.click();await tick();assert.equal(calls.at(-1).rankingVersion,3);assert.equal(nodes.rankingForm.hidden,false);
+ responses.push({runId:'11111111-1111-4111-8111-111111111111'});listeners['chacha:run-start']();await tick();assert.equal(calls.at(-1).rankingVersion,3);
  listeners['chacha:run-end']({detail:{score:42,ticks:240}});assert.equal(nodes.rankSubmit.disabled,false);
  nodes.rankNickname.value='<script>';await nodes.rankingForm.submit({preventDefault(){}});assert(!calls.some(c=>c.action==='submit'),'reject markup nickname');
  nodes.rankNickname.value='달리는차차';responses.push({leaders:[{rank:1,nickname:'<img src=x>',distance:42}],mine:{rank:1,distance:42,nickname:'달리는차차'},total:1});await nodes.rankingForm.submit({preventDefault(){}});
- assert.equal(calls.at(-1).ticks,240);assert.equal(calls.at(-1).rankingVersion,2);assert.equal(calls.at(-1).scoreVersion,3);assert.equal(nodes.rankSubmit.disabled,true);assert.equal(nodes.rankingRows.children[0].children[1].textContent,'<img src=x>','nickname rendered as text');
+ assert.equal(calls.at(-1).ticks,240);assert.equal(calls.at(-1).rankingVersion,3);assert.equal(calls.at(-1).scoreVersion,3);assert.equal(nodes.rankSubmit.disabled,true);assert.equal(nodes.rankingRows.children[0].children[1].textContent,'<img src=x>','nickname rendered as text');
  const count=calls.length;await nodes.rankingForm.submit({preventDefault(){}});assert.equal(calls.length,count,'no duplicate submission');
  assert(edge.includes("rankingVersion===2?'chacha_ranking_v2':'chacha_ranking'"));assert(edge.includes("rankingVersion===2?'chacha_submit_score_v2':'chacha_submit_score'"));
- console.log('PASS: v1/v2 leaderboard routing, v2 scoring parity, run hooks, nickname safety, duplicate protection');
+ assert(edge.includes("rankingVersion===3?'chacha_start_run_v3'"));assert(edge.includes("rankingVersion===3?'chacha_submit_score_v3'"));
+ console.log('PASS: v3 and archived v1/v2 leaderboard routing, v2 scoring parity, run hooks, nickname safety, duplicate protection');
 })().catch(e=>{console.error(e);process.exitCode=1});

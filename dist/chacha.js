@@ -11,7 +11,7 @@ const gameConfig={invincible:false};
 
 const app={mode:'preview',time:0,phase:0,rate:1,slow:false,frozen:false,distance:0,speed:START_SPEED,scroll:0,spawn:1.5,obstacles:[],dust:[],jumpY:0,vy:0,land:0,buffer:0,best:0,sound:false,jumpsUsed:0,secondFlash:0,hits:0};
 let W=1000,H=392, ground=290, last=0, accumulator=0,audio;
-try{const saved=Number(localStorage.getItem('chow_high_score'));app.best=Number.isFinite(saved)&&saved>=0?Math.floor(saved):0}catch{}
+try{const saved=Number(localStorage.getItem('chacha_v3_high_score'));app.best=Number.isFinite(saved)&&saved>=0?Math.floor(saved):0}catch{}
 $('best').innerHTML=app.best+' <small>m</small>';
 const images={};
 async function loadImage(name){
@@ -98,7 +98,20 @@ function actorX(){return app.mode==='preview'?W*.48:Math.min(100,W*.16)}
 function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start'));resetRun();$('result').hidden=true;$('start').hidden=true;$('pause').hidden=false;$('pause').textContent='잠깐 쉬기 Ⅱ';$('hint').hidden=true;$('modeLabel').textContent='차차, 달리는 중!';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=true;app.frozen=false;$('freeze').setAttribute('aria-pressed','false');$('freeze').textContent='동작 멈추기';$('instructions').innerHTML='<kbd>SPACE</kbd> 두 번 눌러 이중 점프 · <kbd>P</kbd> 일시정지';beep(660,.1)}
 function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;app.jumpsUsed=0;app.secondFlash=0;updateJumpLabel();$('result').hidden=true;$('start').hidden=false;$('pause').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 두 번 터치로 이중 점프'}
 function pause(){if(app.mode==='play'){app.mode='paused';$('pause').textContent='계속 달리기 ▷';$('modeLabel').textContent='차차, 쉬는 중'}else if(app.mode==='paused'){app.mode='play';$('pause').textContent='잠깐 쉬기 Ⅱ';$('modeLabel').textContent='차차, 달리는 중!'}}
-function gameOver(){app.mode='over';beep(160,.35,'triangle');const score=Math.floor(app.distance),isNew=score>app.best;app.best=Math.max(score,app.best);try{localStorage.setItem('chow_high_score',String(app.best))}catch{}$('best').innerHTML=app.best+' <small>m</small>';$('final').textContent=score;$('resultNote').textContent=isNew?'새로운 최고 기록! 차차, 멋진데?':'다음에는 조금 더 멀리!';$('result').hidden=false;$('pause').hidden=true;window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks}}))}
+function updateStageLabel(){const stage=stageFor(app.distance);$('stageLabel').textContent=STAGES[stage].label}
+function gameOver(){
+ app.mode='over';beep(160,.35,'triangle');
+ const score=Math.floor(app.distance),previous=app.best,isNew=score>previous;
+ app.best=Math.max(score,previous);try{localStorage.setItem('chacha_v3_high_score',String(app.best))}catch{}
+ $('best').innerHTML=app.best+' <small>m</small>';$('final').textContent=score;
+ $('resultNote').textContent=isNew?'새로운 v3 최고 기록!':'다음에는 조금 더 멀리!';
+ $('resultCleared').textContent=(app.cleared||0)+'개';
+ $('resultBest').textContent=previous+' m';
+ $('resultGap').textContent=isNew?'최고 기록 +'+(score-previous)+' m':'최고 기록까지 '+(previous-score)+' m';
+ $('resultStage').textContent=STAGES[stageFor(app.distance)].label;
+ $('result').hidden=false;$('pause').hidden=true;
+ window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks}}));
+}
 function jump(){
  if(app.mode==='over'||app.mode==='paused')return;
  const grounded=app.jumpY<=.01;
@@ -129,10 +142,17 @@ function smallSpacing(previous,next,speed){
  const arrivalSpeed=Math.min(MAX_SPEED,speed*Math.exp(.0042*8));
  return previous.w+47+arrivalSpeed*(2*JUMP_SPEED/GRAVITY+.22);
 }
-function makeEncounter(atX,speed){
+const STAGES=[
+ {from:0,label:'01 · 시골길 적응',tight:0,sky:['#a9c9c4','#e8e4bc']},
+ {from:500,label:'02 · 들판의 리듬',tight:.10,sky:['#e8c790','#f1d6a4']},
+ {from:1500,label:'03 · 노을 속 도전',tight:.20,sky:['#be8e9f','#f1b78d']}
+];
+function stageFor(distance){return distance<500?0:distance<1500?1:2}
+function makeEncounter(atX,speed,distance=2000){
+ const stage=stageFor(distance);
  // 20% of all encounters: ordinary-height vegetables, timed by horizontal
  // collision span. Pairs have a narrow single-jump window; triples exceed it.
- if(Math.random()<.2){
+ if(Math.random()<STAGES[stage].tight){
   const count=Math.random()<.5?2:3,cluster=[];
   for(let i=0;i<count;i++){
    const o=makeObstacle(Math.random()<.5?'radish':'cabbage',0);
@@ -143,9 +163,9 @@ function makeEncounter(atX,speed){
   for(const o of cluster){o.x=atX;atX+=o.w+gap}
   return cluster;
  }
- const first=makeObstacle('random',atX),pattern=[first];
+ const first=makeObstacle(stage===0?(Math.random()<.5?'radish':'cabbage'):'random',atX),pattern=[first];
  if(first.giant||first.name==='crow')return pattern;
- const roll=Math.random(),count=roll<.1?1:roll<.55?2:3;
+ const roll=Math.random(),count=stage===0?(roll<.7?1:2):roll<.1?1:roll<.55?2:3;
  for(let i=1;i<count;i++){
   const next=makeObstacle(Math.random()<.5?'radish':'cabbage',0),previous=pattern[i-1];
   next.x=previous.x+smallSpacing(previous,next,speed);pattern.push(next);
@@ -167,7 +187,7 @@ function sweptCollision(a0,a1,b0,b1){
  }
  return exit>0&&enter<1;
 }
-function resetRun(){Object.assign(app,{mode:'play',distance:0,speed:START_SPEED,spawn:1.25,obstacles:[],dust:[],jumpY:0,vy:0,land:0,jumpsUsed:0,secondFlash:0,hits:0,runTicks:0});updateJumpLabel()}
+function resetRun(){Object.assign(app,{mode:'play',distance:0,speed:START_SPEED,spawn:1.25,obstacles:[],dust:[],jumpY:0,vy:0,land:0,jumpsUsed:0,secondFlash:0,hits:0,runTicks:0,cleared:0});updateJumpLabel();updateStageLabel()}
 function update(dt){
  if(app.mode==='paused'||app.mode==='over')return;
  const previewing=app.mode==='preview';if(previewing&&app.frozen)return;
@@ -185,7 +205,7 @@ function update(dt){
   app.spawn-=t;
   // One encounter at a time; only small ground vegetables form sequences.
   if(app.spawn<=0&&app.obstacles.length===0){
-   app.obstacles.push(...makeEncounter(W+app.speed*1.15,app.speed));app.spawn=0;
+   app.obstacles.push(...makeEncounter(W+app.speed*1.15,app.speed,app.distance));app.spawn=0;
   }
   const newActor=actorBox();
   for(const o of app.obstacles){
@@ -195,6 +215,8 @@ function update(dt){
     if(!gameConfig.invincible){gameOver();break}
    }
   }
+  for(const o of app.obstacles)if(!o.counted&&!o.hit&&o.x+o.w<actorBox().left){o.counted=true;app.cleared=(app.cleared||0)+1}
+  updateStageLabel();
   const departing=app.obstacles.filter(o=>o.x+o.w<=-60);
   if(departing.length)app.spawn=Math.max(...departing.map(recoveryTime));
   app.obstacles=app.obstacles.filter(o=>o.x+o.w>-60);
@@ -225,9 +247,9 @@ function recoveryTime(o){
  const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight?2*SECOND_JUMP_SPEED/GRAVITY:0);
  return flight+.32+o.w/START_SPEED;
 }
-function paintCountryside(){
+function paintCountryside(stage=0){
  const sky=ctx.createLinearGradient(0,0,0,ground);
- sky.addColorStop(0,'#a9c9c4');sky.addColorStop(1,'#e8e4bc');
+ sky.addColorStop(0,STAGES[stage].sky[0]);sky.addColorStop(1,STAGES[stage].sky[1]);
  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
  ctx.save();ctx.filter='blur(4px)';
  ellipse(W*.77,ground*.22,25,25,'#fff0c3');
@@ -267,14 +289,19 @@ function paintObstacle(o){
 }
 // Blur and alpha outlines are baked once, rather than filtered every frame.
 let countrysideCache=null;
+const countrysideLayers=new Map();
 const obstacleCache=new Map();
 function drawCountryside(){
- if(!countrysideCache||countrysideCache.worldW!==W||countrysideCache.worldH!==H){
+ const stage=stageFor(app.distance);
+ const key=W+':'+H+':'+stage;
+ if(countrysideCache&&(countrysideCache.worldW!==W||countrysideCache.worldH!==H))countrysideLayers.clear();
+ if(!countrysideLayers.has(key)){
   const layer=document.createElement('canvas');layer.width=Math.ceil(W*.5);layer.height=Math.ceil(H*.5);
   const saved=ctx;ctx=layer.getContext('2d');ctx.scale(.5,.5);
-  try{paintCountryside()}finally{ctx=saved}
-  countrysideCache={image:layer,worldW:W,worldH:H};
+  try{paintCountryside(stage)}finally{ctx=saved}
+  countrysideLayers.set(key,{image:layer,worldW:W,worldH:H});
  }
+ countrysideCache=countrysideLayers.get(key);
  ctx.drawImage(countrysideCache.image,0,0,W,H);
  // Only the lightweight road marks move. Distant scenery stays softly blurred.
  for(let x=-(app.scroll%80);x<W;x+=80){ctx.fillStyle='#9e946e';ctx.fillRect(x,ground+24,31,2);ctx.fillRect(x+33,ground+45,17,1)}
