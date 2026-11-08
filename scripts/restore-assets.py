@@ -11,7 +11,13 @@ manifest=json.loads((root/'dist'/'release.json').read_text(encoding='utf8'))
 for name,expected in manifest['files'].items():
     file=root/'dist'/name
     if name=='_headers':continue # GitHub Pages does not interpret this optional hosting file.
-    actual=hashlib.sha256(file.read_bytes()).hexdigest()
+    contents=file.read_bytes()
+    # Git checkouts may use CRLF on Windows and LF on Linux. Hash text files
+    # in canonical LF form so the same release manifest verifies everywhere.
+    if file.suffix.lower() in {'.js','.cjs','.html','.css','.json','.webmanifest','.ts','.sql','.md'}:
+        contents=contents.replace(b'\r\n',b'\n')
+    actual=hashlib.sha256(contents).hexdigest()
     if actual!=expected:raise RuntimeError(f'File integrity mismatch: {name}')
 (root/'dist'/'.nojekyll').touch()
 print(f'Restored {len(list(assets.iterdir()))} image assets; release integrity verified.')
+
