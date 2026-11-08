@@ -132,7 +132,7 @@ function smallSpacing(previous,next,speed){
 function makeEncounter(atX,speed){
  const first=makeObstacle('random',atX),pattern=[first];
  if(first.giant||first.name==='crow')return pattern;
- const roll=Math.random(),count=roll<.35?1:roll<.7?2:3;
+ const roll=Math.random(),count=roll<.1?1:roll<.55?2:3;
  for(let i=1;i<count;i++){
   const next=makeObstacle(Math.random()<.5?'radish':'cabbage',0),previous=pattern[i-1];
   next.x=previous.x+smallSpacing(previous,next,speed);pattern.push(next);
