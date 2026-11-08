@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "cache": "chacha-release-2.0.0-v2",
+  "version": "2.1.0",
+  "cache": "chacha-release-2.1.0-v2",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -11,15 +11,16 @@
     "assets/icon-512.png": "d59f49aaf9caa2f7527d1b48b2c830fd36a098fdca1cf0b7d679a12395e29463",
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
-    "chacha.js": "f91d8a5258671415eab3ec14e4c621e0a02d34f37384c6fea15ea1528d93413e",
-    "index.html": "9534e9812efc0ad5b416c32009f7dbd526f85b2eeafc02f9015f5dc2c933e11b",
+    "chacha.js": "5c1e9481ced6e51cfacb684f747d6004376ea15a673244d36138fdff6f2e4c81",
+    "index.html": "16307971da499f4ead8ddc1c19558cd591206b23059e67b4af1536ce2fc3a026",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
-    "notices.js": "2a9defcc453ad35a3ee562b6098253d106563e45492137cec11b22fbf6707fc6",
-    "patch-notes.html": "103da915b5df3344a4d90614822d12806a4d378c7027795da1ebde7801511ccf",
-    "play.html": "9534e9812efc0ad5b416c32009f7dbd526f85b2eeafc02f9015f5dc2c933e11b",
+    "notices.js": "4075f95646cbf8f0c0e8293844b551de11e28e7cdefdd710b995a22b27cb1386",
+    "patch-notes.html": "9545c5fe010cab29f28341048115977cfb8818b1ba442efb3be11fc32942403d",
+    "play.html": "16307971da499f4ead8ddc1c19558cd591206b23059e67b4af1536ce2fc3a026",
     "pwa.js": "86cb68c50a4b63a1c762f9496e200e68762c6937675a594c4baf8234c0e3e45c",
     "ranking.js": "c5c5fa50b62d172c9dec920b71f22462b760fd45241fcd3d9422594409a5c806",
     "style.css": "a53a7fe22a12dd452d0c5a35ac9e2bb870c5897c7361664901462fa69e200690",
-    "sw.js": "430d3d0a42df5453938352b0f279d34f0128231c3f8cc044b96154d79f8b59ed"
+    "sw.js": "a6bd224127ed64f56c7d56bd07619a69dc5f582eca25775de8284c7448c41b7a",
+    "assets/countryside-bg.svg": "d18b8369b722826a0e3b47f37b45b48f0d38d37db7d5fe4ff11137dce3ec2c0a"
   }
 }
