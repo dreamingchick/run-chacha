@@ -18,5 +18,7 @@ for name,expected in manifest['files'].items():
         contents=contents.replace(b'\r\n',b'\n')
     actual=hashlib.sha256(contents).hexdigest()
     if actual!=expected:raise RuntimeError(f'File integrity mismatch: {name}; actual={actual}; expected={expected}')
+for source in (root/'asset-data').glob('*.svg'):
+    (assets/source.name).write_bytes(source.read_bytes())
 (root/'dist'/'.nojekyll').touch()
 print(f'Restored {len(list(assets.iterdir()))} image assets; release integrity verified.')
