@@ -3,6 +3,7 @@
  const endpoint='https://andnqwjhnykppumeikgx.supabase.co/functions/v1/ranking';
  const publishableKey='sb_publishable_qaCv6LifqZqOreFiJ5EWzw_0zWVFyOp';
  const el=id=>document.getElementById(id);
+ const previewHost=window.location?.hostname?.endsWith('.vercel.app')===true;
  let token,runPromise,currentResult,sequence=0,submitted=false,busy=false,selectedVersion=2;
  try{token=localStorage.getItem('chacha_player_token')}catch{}
  if(!/^[a-f0-9]{64}$/.test(token||'')){
@@ -34,20 +35,22 @@
   selectedVersion=version;
   for(const [v,id] of [[2,'rankV2'],[1,'rankV1']]){el(id).classList.toggle('active',v===version);el(id).setAttribute('aria-selected',String(v===version))}
   el('rankVersionBadge').textContent='V'+version+' · TOP 20';
-  el('rankingForm').hidden=version===1;
+  el('rankingForm').hidden=version===1||previewHost;
   if(version===1)el('myRanking').textContent='v1 기록은 보존되어 있어요';
   refresh();
  }
- function showForm(){selectVersion(2);el('rankingPanel').scrollIntoView({behavior:'smooth',block:'center'});el('rankNickname').focus({preventScroll:true})}
+ function showForm(){selectVersion(2);el('rankingPanel').scrollIntoView({behavior:'smooth',block:'center'});if(!previewHost)el('rankNickname').focus({preventScroll:true})}
  window.addEventListener('chacha:run-start',()=>{
+  if(previewHost)return;
   const seq=++sequence;currentResult=null;submitted=false;el('rankSubmit').disabled=true;el('rankSubmitStatus').textContent='달리기를 마치면 이번 기록을 등록할 수 있어요.';
   runPromise=api('start',{},2).then(value=>seq===sequence?value:null).catch(()=>null);
  });
  window.addEventListener('chacha:run-end',event=>{
+  if(previewHost)return;
   currentResult={...event.detail};el('rankSubmit').disabled=false;el('rankSubmitStatus').textContent='이번 기록 '+currentResult.score+' m · 닉네임과 기록이 공개됩니다.';
  });
  el('rankingForm').addEventListener('submit',async event=>{
-  event.preventDefault();if(!currentResult||submitted||busy)return;
+  event.preventDefault();if(previewHost||!currentResult||submitted||busy)return;
   const nickname=el('rankNickname').value.normalize('NFKC').trim();
   if(!/^[\p{L}\p{N} _-]{2,12}$/u.test(nickname)){el('rankSubmitStatus').textContent='닉네임은 한글·영문·숫자 등 2~12자로 입력해 주세요.';return}
   busy=true;el('rankSubmit').disabled=true;const seq=sequence,result={...currentResult};
@@ -59,5 +62,6 @@
   finally{busy=false;el('rankSubmit').disabled=submitted||!currentResult}
  });
  el('rankRefresh').addEventListener('click',refresh);el('openRanking').addEventListener('click',showForm);el('rankV2').addEventListener('click',()=>selectVersion(2));el('rankV1').addEventListener('click',()=>selectVersion(1));
+ if(previewHost){el('rankingForm').hidden=true;el('rankSubmit').disabled=true;el('rankSubmitStatus').textContent='테스트 환경에서는 랭킹 기록을 등록할 수 없습니다.'}
  refresh();
 })();

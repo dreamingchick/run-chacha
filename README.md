@@ -7,6 +7,8 @@
 - 네 발이 공중에 뜨는 달리기 애니메이션
 - 단일 점프, 점점 빨라지는 속도, 브라우저별 최고 기록
 - 키보드·마우스·모바일 터치 지원
+- 장애물은 한 번에 하나씩 생성하고, 대형 장애물 뒤에는 회복 구간 보장
+- 흐릿한 시골 배경과 장애물 외곽선·그림자로 플레이 가독성 개선
 - 앱 설치와 오프라인 실행을 위한 PWA 설정
 - 외부 CDN, 로그인, 데이터베이스 없이 실행
 
@@ -29,7 +31,7 @@ node release-check.cjs
 python -m http.server 8765 --directory dist
 ```
 
-브라우저에서 http://localhost:8765 를 엽니다. 이미지 원본은 `asset-data/`에 Base64 텍스트로 보관하며 빌드할 때 `dist/assets/`로 손실 없이 복원합니다.
+브라우저에서 http://localhost:8765 를 엽니다. 이미지 원본은 `asset-data/`에 보관하며 빌드할 때 `dist/assets/`로 복원합니다.
 
 게임 소스는 `dist/chacha.js`, 화면은 `dist/index.html`, 스타일은 `dist/style.css`입니다. `dist/release.json`은 파일 무결성 해시입니다. 게임 파일이나 이미지를 수정하면 이 해시와 `sw.js`의 캐시 이름도 갱신해야 합니다.
 

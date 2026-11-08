@@ -1,9 +1,9 @@
 'use strict';
-const CACHE = 'chacha-release-2.0.0-v2';
+const CACHE = 'chacha-release-2.1.0-v2';
 const FILES = [
  './','./index.html','./play.html','./patch-notes.html',
- './style.css?v=2.0.0','./chacha.js?v=2.0.0','./ranking.js?v=2.0.0','./pwa.js?v=2.0.0','./notices.js?v=2.0.0',
- './manifest.webmanifest','./assets/chowRun.jpg','./assets/radish.jpg','./assets/cabbage.jpg',
+ './style.css?v=2.1.0','./chacha.js?v=2.1.0','./ranking.js?v=2.1.0','./pwa.js?v=2.1.0','./notices.js?v=2.1.0',
+ './manifest.webmanifest','./assets/chowRun.jpg','./assets/radish.jpg','./assets/cabbage.jpg','./assets/countryside-bg.svg',
  './assets/chacha-run-sheet.png','./assets/chacha-gallop-sheet.png','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable.png','./assets/apple-touch-icon.png'
 ];
 self.addEventListener('install', event => {
