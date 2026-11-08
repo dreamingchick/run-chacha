@@ -109,4 +109,3 @@ end $$;
 revoke all on function public.chacha_ranking_v2(text),public.chacha_submit_score_v2(text,uuid,text,integer,integer) from public,anon,authenticated;
 grant execute on function public.chacha_ranking_v2(text),public.chacha_submit_score_v2(text,uuid,text,integer,integer) to service_role;
 create policy chacha_scores_v2_no_direct_access on public.chacha_scores_v2 for all to anon,authenticated using(false) with check(false);
-

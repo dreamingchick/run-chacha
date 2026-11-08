@@ -23,4 +23,3 @@ async function serviceWorkerCheck(){
  console.log('PASS: deployment file references, no external runtime dependencies, icon sizes, offline cache and subdirectory scope');
 }
 serviceWorkerCheck().catch(error=>{console.error(error);process.exitCode=1});
-

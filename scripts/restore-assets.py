@@ -20,4 +20,3 @@ for name,expected in manifest['files'].items():
     if actual!=expected:raise RuntimeError(f'File integrity mismatch: {name}; actual={actual}; expected={expected}')
 (root/'dist'/'.nojekyll').touch()
 print(f'Restored {len(list(assets.iterdir()))} image assets; release integrity verified.')
-

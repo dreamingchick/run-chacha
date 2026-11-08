@@ -219,4 +219,3 @@ $('phase').oninput=e=>{app.frozen=true;app.phase=Number(e.target.value);$('freez
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();jump()});window.addEventListener('keydown',e=>{if(['INPUT','BUTTON','A','SELECT'].includes(e.target.tagName))return;if(['Space','ArrowUp'].includes(e.code)){e.preventDefault();if(!e.repeat)jump()}if(e.code==='KeyP'||e.code==='Escape')pause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&app.mode==='play')pause();last=0;accumulator=0});
 updateJumpLabel();requestAnimationFrame(frame);
 
-

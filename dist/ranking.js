@@ -61,4 +61,3 @@
  el('rankRefresh').addEventListener('click',refresh);el('openRanking').addEventListener('click',showForm);el('rankV2').addEventListener('click',()=>selectVersion(2));el('rankV1').addEventListener('click',()=>selectVersion(1));
  refresh();
 })();
-

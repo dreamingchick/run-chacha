@@ -37,4 +37,3 @@ const cap=setup();cap.app.distance=1e9;cap.update(DT);assert.equal(cap.app.speed
 const source=fs.readFileSync('dist/chacha.js','utf8'),html=fs.readFileSync('dist/index.html','utf8');assert(source.includes("dispatchEvent(new Event('chacha:run-start'))"));assert(source.includes("dispatchEvent(new CustomEvent('chacha:run-end'"));assert(!html.includes('testStart'));assert(html.includes('id="rankV1"')&&html.includes('id="rankV2"'));
 console.log('PASS: production game hooks, v1/v2 tabs, no internal test controls');
 
-

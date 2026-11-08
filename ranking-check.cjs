@@ -26,4 +26,3 @@ const tick=()=>new Promise(r=>setImmediate(r));
  assert(edge.includes("rankingVersion===2?'chacha_ranking_v2':'chacha_ranking'"));assert(edge.includes("rankingVersion===2?'chacha_submit_score_v2':'chacha_submit_score'"));
  console.log('PASS: v1/v2 leaderboard routing, v2 scoring parity, run hooks, nickname safety, duplicate protection');
 })().catch(e=>{console.error(e);process.exitCode=1});
-
