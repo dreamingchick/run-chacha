@@ -17,7 +17,7 @@ for name,expected in manifest['files'].items():
     if file.suffix.lower() in {'.js','.cjs','.html','.css','.json','.webmanifest','.ts','.sql','.md'}:
         contents=contents.replace(b'\r\n',b'\n')
     actual=hashlib.sha256(contents).hexdigest()
-    if actual!=expected:raise RuntimeError(f'File integrity mismatch: {name}')
+    if actual!=expected:raise RuntimeError(f'File integrity mismatch: {name}; actual={actual}; expected={expected}')
 (root/'dist'/'.nojekyll').touch()
 print(f'Restored {len(list(assets.iterdir()))} image assets; release integrity verified.')
 
