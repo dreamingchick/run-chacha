@@ -130,6 +130,19 @@ function smallSpacing(previous,next,speed){
  return previous.w+47+arrivalSpeed*(2*JUMP_SPEED/GRAVITY+.22);
 }
 function makeEncounter(atX,speed){
+ // 20% of all encounters: ordinary-height vegetables, timed by horizontal
+ // collision span. Pairs have a narrow single-jump window; triples exceed it.
+ if(Math.random()<.2){
+  const count=Math.random()<.5?2:3,cluster=[];
+  for(let i=0;i<count;i++){
+   const o=makeObstacle(Math.random()<.5?'radish':'cabbage',0);
+   Object.assign(o,{tight:true,label:count===2?'밀집 2연속 · 점프 타이밍 주의':'밀집 3연속 · 이중 점프'});cluster.push(o);
+  }
+  const arrivalSpeed=Math.min(MAX_SPEED,speed*Math.exp(.0042*8));
+  const gap=Math.max(8,(arrivalSpeed*(count===2?.49:.72)-37-cluster.reduce((n,o)=>n+o.w,0))/(count-1));
+  for(const o of cluster){o.x=atX;atX+=o.w+gap}
+  return cluster;
+ }
  const first=makeObstacle('random',atX),pattern=[first];
  if(first.giant||first.name==='crow')return pattern;
  const roll=Math.random(),count=roll<.1?1:roll<.55?2:3;
@@ -209,7 +222,7 @@ function drawCrow(o){
 function drawChestnut(o){const x=o.x+o.w/2,y=ground-o.h/2;ctx.save();ctx.translate(x,y);ctx.fillStyle='#71351f';ctx.beginPath();ctx.arc(0,4,17,Math.PI,0);ctx.lineTo(17,6);ctx.lineTo(-17,6);ctx.closePath();ctx.fill();ctx.strokeStyle='#f4d486';ctx.lineWidth=2.2;for(let i=0;i<9;i++){const a=Math.PI+i*Math.PI/8;ctx.beginPath();ctx.moveTo(Math.cos(a)*8,3+Math.sin(a)*8);ctx.lineTo(Math.cos(a)*23,3+Math.sin(a)*23);ctx.stroke()}ctx.fillStyle='#2b2219';ctx.beginPath();ctx.arc(0,4,2,0,TAU);ctx.fill();ctx.restore()}
 function recoveryTime(o){
  // Worst double-jump flight: second impulse just before first landing.
- const flight=2*JUMP_SPEED/GRAVITY+(o.giant?2*SECOND_JUMP_SPEED/GRAVITY:0);
+ const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight?2*SECOND_JUMP_SPEED/GRAVITY:0);
  return flight+.32+o.w/START_SPEED;
 }
 function paintCountryside(){

@@ -1,6 +1,6 @@
 {
-  "version": "2.0.4",
-  "cache": "chacha-release-2.0.4-countryside",
+  "version": "2.0.5",
+  "cache": "chacha-release-2.0.5-countryside",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -11,15 +11,15 @@
     "assets/icon-512.png": "d59f49aaf9caa2f7527d1b48b2c830fd36a098fdca1cf0b7d679a12395e29463",
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
-    "chacha.js": "d9da4540a66210573667bdb228ae788f3db5988d829889edd90f17c0a7a93561",
-    "index.html": "cb6bcaf1c7d8b0beff381f97d041844b7ed8f80961bb44b0de1dfbd29c5014f3",
+    "chacha.js": "f5d6e6b60472f28d0ce343d83ce10cf92248757225a12713c074f1778f2a23de",
+    "index.html": "50bab2a7edc32af3a35b53fe9145080e11286b8a412ee7fba48254d37d8f2325",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
-    "notices.js": "f8532ed5f608e0c0ed29fe2155866cb7148dd8e965255cf283b1eb0d67e22dcb",
-    "patch-notes.html": "0d0df4091e3403394dee1892e68187b50b026ac2252ec578de415d80c5e7c547",
-    "play.html": "cb6bcaf1c7d8b0beff381f97d041844b7ed8f80961bb44b0de1dfbd29c5014f3",
+    "notices.js": "e41a6a79334d6816e2d354edbd01a14b9c34c56e167675524362c4327a20c092",
+    "patch-notes.html": "8ca16333b6a28cbe8ecd29cc5af936a4090e211857c15d8797a0f5bec2763c3b",
+    "play.html": "50bab2a7edc32af3a35b53fe9145080e11286b8a412ee7fba48254d37d8f2325",
     "pwa.js": "86cb68c50a4b63a1c762f9496e200e68762c6937675a594c4baf8234c0e3e45c",
     "ranking.js": "c5c5fa50b62d172c9dec920b71f22462b760fd45241fcd3d9422594409a5c806",
     "style.css": "097fd7e1ef2e33df1897377461fe9f005b2aa10eac939d24440d53790e1499f0",
-    "sw.js": "424b5ff51cb79af20215666993409f215d7fd0702e65563aa13f1c41cc988e81"
+    "sw.js": "a411e9c71cc5f6b928f7d9a299910b7d2d29b8edf6fa1def3d702d6e4522f6bb"
   }
 }

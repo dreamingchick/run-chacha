@@ -29,9 +29,9 @@ const paused=setup();paused.pause();paused.jump();assert.equal(paused.app.jumpsU
 const mix=setup();let seed=12345;mix.setRandom(()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296});const counts=new Set();let giants=0,crows=0;
 for(let i=0;i<3000;i++){
  const pattern=mix.makeEncounter(2000,mix.START_SPEED);counts.add(pattern.length);
- if(pattern[0].giant){giants++;assert.equal(pattern.length,1)}
+ if(pattern[0].giant&&!pattern[0].tight){giants++;assert.equal(pattern.length,1)}
  if(pattern[0].name==='crow'){crows++;assert.equal(pattern.length,1)}
- if(pattern.length>1)assert(pattern.every(o=>!o.giant&&o.bottom===0&&['radish','cabbage'].includes(o.name)));
+ if(pattern.length>1)assert(pattern.every(o=>(!o.giant||o.tight)&&o.bottom===0&&['radish','cabbage'].includes(o.name)));
 }
 assert.deepEqual([...counts].sort(),[1,2,3]);assert(giants>0&&crows>0);
 for(const width of [640,1000])for(const multi of [1,2,5,10])for(const count of [2,3]){
@@ -51,7 +51,7 @@ for(const multi of [1,10]){
  const x=setup(multi);x.gameConfig.invincible=true;x.app.spawn=0;
  for(let i=0;i<120*90;i++){
   x.update(DT);assert(x.app.obstacles.length<=3);
-  if(x.app.obstacles.some(o=>o.giant||o.name==='crow'))assert.equal(x.app.obstacles.length,1,'large/crow encounter stays isolated');
+  if(x.app.obstacles.some(o=>(o.giant&&!o.tight)||o.name==='crow'))assert.equal(x.app.obstacles.length,1,'large/crow encounter stays isolated');
  }
 }
 console.log('PASS: small pairs/triples clearable at 1/2/5/10x and mobile/desktop; giants and crows stay isolated');
@@ -70,3 +70,25 @@ assert.equal(graphics.drawingStats.images-warm.images,200,'one background and on
 graphics.setWorld(640,500);graphics.render();assert.equal(graphics.drawingStats.blurs,warm.blurs+1,'resize rebuilds background');
 assert(!/id="(?:jump|jumpMobile)"/.test(html),'no jump buttons');assert(source.includes("canvas.addEventListener('pointerdown'"),'canvas touch jump retained');
 console.log('PASS: 100 warmed frames use zero blur/shadow passes and two image draws per frame; resize invalidation and touch-only UI');
+
+let tightCount=0;const tightSizes=new Set();
+for(let i=0;i<10000;i++){const p=mix.makeEncounter(2000,mix.START_SPEED);if(p[0].tight){tightCount++;tightSizes.add(p.length);assert(p.every(o=>o.tight&&!o.giant&&o.h<=46))}}
+assert(tightCount>1800&&tightCount<2200);assert.deepEqual([...tightSizes].sort(),[2,3]);
+for(const width of [640,1000])for(const multi of [1,2,5,10])for(const count of [2,3]){
+ let singlePass=0,singleFail=0,doublePass=0;
+ for(let lead=.04;lead<=.65;lead+=.01){
+  for(const second of [null,.30,.40,.50]){
+   const x=setup(multi);x.setWorld(width,480);let calls=0;
+   x.setRandom(()=>++calls===1?0:calls===2?(count===2?0:.99):.9);
+   const pattern=x.makeEncounter(x.actorBox().right+x.app.speed*lead-5,x.app.speed);
+   assert.equal(pattern.length,count);x.app.obstacles=pattern;x.jump();
+   for(let i=0;i<200&&x.app.mode==='play';i++){if(second!==null&&i===Math.round(second/DT))x.jump();x.update(DT)}
+   if(second===null){if(x.app.mode==='play')singlePass++;else singleFail++}
+   else if(x.app.mode==='play')doublePass++;
+  }
+ }
+ if(count===2){assert(singlePass>0,'pair has single-jump timing window');assert(singleFail>0,'pair punishes poor timing')}
+ else assert.equal(singlePass,0,'triple exceeds a single jump at every sampled timing');
+ assert(doublePass>0,'both cluster sizes can be double-jumped');
+}
+console.log('PASS: 20% ordinary-height tight clusters; pairs allow precise single jumps, triples need double jumps, all speeds and widths');
