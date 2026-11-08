@@ -2,7 +2,8 @@
  * single jump (-12.5 / .65 per 60Hz frame), 4.32 starting speed, local best.
  * Rebuilt with a time-based simulation and an articulated continuous gait. */
 'use strict';
-const $=id=>document.getElementById(id), canvas=$('game'), ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id), canvas=$('game');
+let ctx=canvas.getContext('2d');
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t;
 const START_SPEED=311.04*1.5,MAX_SPEED=START_SPEED*10,GRAVITY=2340,JUMP_SPEED=750,SECOND_JUMP_SPEED=820;
 const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.24;
@@ -30,10 +31,14 @@ async function loadImage(name){
  const cut=document.createElement('canvas');cut.width=crop[2];cut.height=crop[3];cut.getContext('2d').drawImage(c,...crop,0,0,cut.width,cut.height);images[name]=cut;
 }
 async function loadRunSheet(){
- const im=new Image();im.src='assets/chacha-gallop-sheet.png';await im.decode();images.runSheet=im;
+ const im=new Image();im.src='assets/chacha-gallop-sheet.png';await im.decode();
+ const scale=Math.min(1,1024/im.width),sheet=document.createElement('canvas');
+ sheet.width=Math.round(im.width*scale);sheet.height=Math.round(im.height*scale);
+ sheet.getContext('2d').drawImage(im,0,0,sheet.width,sheet.height);
+ images.runSheet=sheet;images.runSheetScale=scale;
 }
 Promise.all([loadRunSheet(),...['radish','cabbage'].map(loadImage)]).then(()=>{$('start').disabled=false;$('start').innerHTML='함께 달리기 <b>↗</b>'}).catch(()=>{$('hint').textContent='이미지 일부를 불러오지 못했어요. 새로고침해 주세요.'});
-function resize(){const r=canvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,2);W=r.width<600?640:1000;H=Math.max(480,W*r.height/r.width);ground=H*.78;canvas.width=Math.round(W*d);canvas.height=Math.round(H*d);ctx.setTransform(d,0,0,d,0,0)}
+function resize(){const r=canvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,1.25);W=r.width<600?640:1000;H=Math.max(480,W*r.height/r.width);ground=H*.78;canvas.width=Math.round(W*d);canvas.height=Math.round(H*d);ctx.setTransform(d,0,0,d,0,0)}
 new ResizeObserver(resize).observe(canvas);resize();
 function ellipse(x,y,rx,ry,color,rotation=0){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,rx,ry,rotation,0,TAU);ctx.fill()}
 function line(points,color,width){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(...points[0]);for(let i=1;i<points.length;i++)ctx.lineTo(...points[i]);ctx.stroke()}
@@ -82,7 +87,7 @@ function drawDog(x,y,scale,phase,jump=0,vy=0,land=0){
  // Match the previous actor's visible width and feet position; collision is unchanged.
  const spriteWidth=154;const unit=spriteWidth/cw,squash=clamp(land,0,1)*.035;
  ctx.scale(1+squash,1-squash);
- ctx.drawImage(images.runSheet,(frame%4)*cw,Math.floor(frame/4)*ch,cw,ch,-spriteWidth/2,-(frame<4?369:356)*unit,spriteWidth,ch*unit);
+ ctx.drawImage(images.runSheet,(frame%4)*cw,Math.floor(frame/4)*ch,cw,ch,-spriteWidth/2,-(frame<4?369:356)*(images.runSheetScale||1)*unit,spriteWidth,ch*unit);
  ctx.restore();
 }
 
@@ -90,10 +95,10 @@ function shadow(x,y,size,jump){ellipse(x,y+3,size*(1-clamp(jump/300,0,.5)),size*
 function addDust(x,y,n=2){for(let i=0;i<n;i++)app.dust.push({x,y,vx:-25-Math.random()*35,vy:-15-Math.random()*25,life:.45,size:2+Math.random()*3})}
 function beep(freq,duration,type='sine'){if(!app.sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.6,audio.currentTime+duration);g.gain.setValueAtTime(.06,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch{}}
 function actorX(){return app.mode==='preview'?W*.48:Math.min(100,W*.16)}
-function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start'));resetRun();$('result').hidden=true;$('start').hidden=true;$('jump').hidden=true;$('pause').hidden=false;$('pause').textContent='잠깐 쉬기 Ⅱ';$('jumpMobile').hidden=false;$('hint').hidden=true;$('modeLabel').textContent='차차, 달리는 중!';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=true;app.frozen=false;$('freeze').setAttribute('aria-pressed','false');$('freeze').textContent='동작 멈추기';$('instructions').innerHTML='<kbd>SPACE</kbd> 두 번 눌러 이중 점프 · <kbd>P</kbd> 일시정지';beep(660,.1)}
-function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;app.jumpsUsed=0;app.secondFlash=0;updateJumpLabel();$('result').hidden=true;$('start').hidden=false;$('jump').hidden=false;$('pause').hidden=true;$('jumpMobile').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 두 번 터치로 이중 점프'}
+function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start'));resetRun();$('result').hidden=true;$('start').hidden=true;$('pause').hidden=false;$('pause').textContent='잠깐 쉬기 Ⅱ';$('hint').hidden=true;$('modeLabel').textContent='차차, 달리는 중!';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=true;app.frozen=false;$('freeze').setAttribute('aria-pressed','false');$('freeze').textContent='동작 멈추기';$('instructions').innerHTML='<kbd>SPACE</kbd> 두 번 눌러 이중 점프 · <kbd>P</kbd> 일시정지';beep(660,.1)}
+function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;app.jumpsUsed=0;app.secondFlash=0;updateJumpLabel();$('result').hidden=true;$('start').hidden=false;$('pause').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 두 번 터치로 이중 점프'}
 function pause(){if(app.mode==='play'){app.mode='paused';$('pause').textContent='계속 달리기 ▷';$('modeLabel').textContent='차차, 쉬는 중'}else if(app.mode==='paused'){app.mode='play';$('pause').textContent='잠깐 쉬기 Ⅱ';$('modeLabel').textContent='차차, 달리는 중!'}}
-function gameOver(){app.mode='over';beep(160,.35,'triangle');const score=Math.floor(app.distance),isNew=score>app.best;app.best=Math.max(score,app.best);try{localStorage.setItem('chow_high_score',String(app.best))}catch{}$('best').innerHTML=app.best+' <small>m</small>';$('final').textContent=score;$('resultNote').textContent=isNew?'새로운 최고 기록! 차차, 멋진데?':'다음에는 조금 더 멀리!';$('result').hidden=false;$('pause').hidden=true;$('jumpMobile').hidden=true;window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks}}))}
+function gameOver(){app.mode='over';beep(160,.35,'triangle');const score=Math.floor(app.distance),isNew=score>app.best;app.best=Math.max(score,app.best);try{localStorage.setItem('chow_high_score',String(app.best))}catch{}$('best').innerHTML=app.best+' <small>m</small>';$('final').textContent=score;$('resultNote').textContent=isNew?'새로운 최고 기록! 차차, 멋진데?':'다음에는 조금 더 멀리!';$('result').hidden=false;$('pause').hidden=true;window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks}}))}
 function jump(){
  if(app.mode==='over'||app.mode==='paused')return;
  const grounded=app.jumpY<=.01;
@@ -106,7 +111,7 @@ function jump(){
 }
 function updateJumpLabel(){
  $('jumpState').textContent='점프 '+(2-app.jumpsUsed)+'/2';
- $('jumpMobile').textContent=app.jumpsUsed===0?'점프 ↑':app.jumpsUsed===1?'한 번 더 ↑':'착지 대기';
+
 }
 function makeObstacle(kind='random',atX,options={}){
  if(kind==='random'){
@@ -193,18 +198,18 @@ function recoveryTime(o){
  const flight=2*JUMP_SPEED/GRAVITY+(o.giant?2*SECOND_JUMP_SPEED/GRAVITY:0);
  return flight+.32+o.w/START_SPEED;
 }
-function drawCountryside(){
+function paintCountryside(){
  const sky=ctx.createLinearGradient(0,0,0,ground);
  sky.addColorStop(0,'#a9c9c4');sky.addColorStop(1,'#e8e4bc');
  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
  ctx.save();ctx.filter='blur(4px)';
  ellipse(W*.77,ground*.22,25,25,'#fff0c3');
  for(let layer=0;layer<2;layer++){
-  const step=260,offset=(app.scroll*(layer?.12:.05))%step;
+  const step=260,offset=(0*(layer?.12:.05))%step;
   for(let x=-step-offset;x<W+step;x+=step)
    ellipse(x+130,ground*(layer?.87:.74),190,ground*(layer?.25:.28),layer?'#9cae83':'#b2bea0');
  }
- const offset=(app.scroll*.18)%440;
+ const offset=(0*.18)%440;
  for(let x=-440-offset;x<W+440;x+=440){
   ctx.fillStyle='#d6c9a6';ctx.fillRect(x+115,ground-85,70,45);
   ctx.fillStyle='#936f59';ctx.beginPath();ctx.moveTo(x+105,ground-83);ctx.lineTo(x+150,ground-113);ctx.lineTo(x+195,ground-83);ctx.closePath();ctx.fill();
@@ -216,9 +221,9 @@ function drawCountryside(){
  ctx.fillStyle='#eee8cd35';ctx.fillRect(0,0,W,ground);
  ctx.fillStyle='#c4ba91';ctx.fillRect(0,ground,W,H-ground);
  ctx.fillStyle='#6d8051';ctx.fillRect(0,ground,W,3);
- for(let x=-(app.scroll%80);x<W;x+=80){ctx.fillStyle='#9e946e';ctx.fillRect(x,ground+24,31,2);ctx.fillRect(x+33,ground+45,17,1)}
+ for(let x=-(0%80);x<W;x+=80){ctx.fillStyle='#9e946e';ctx.fillRect(x,ground+24,31,2);ctx.fillRect(x+33,ground+45,17,1)}
 }
-function drawObstacle(o){
+function paintObstacle(o){
  shadow(o.x+o.w/2,ground,o.w*.65,0);
  ctx.save();ctx.translate(o.x+o.w/2,ground);
  if(images[o.name]){
@@ -233,14 +238,39 @@ function drawObstacle(o){
  }
  ctx.restore();
 }
+// Blur and alpha outlines are baked once, rather than filtered every frame.
+let countrysideCache=null;
+const obstacleCache=new Map();
+function drawCountryside(){
+ if(!countrysideCache||countrysideCache.worldW!==W||countrysideCache.worldH!==H){
+  const layer=document.createElement('canvas');layer.width=Math.ceil(W*.5);layer.height=Math.ceil(H*.5);
+  const saved=ctx;ctx=layer.getContext('2d');ctx.scale(.5,.5);
+  try{paintCountryside()}finally{ctx=saved}
+  countrysideCache={image:layer,worldW:W,worldH:H};
+ }
+ ctx.drawImage(countrysideCache.image,0,0,W,H);
+ // Only the lightweight road marks move. Distant scenery stays softly blurred.
+ for(let x=-(app.scroll%80);x<W;x+=80){ctx.fillStyle='#9e946e';ctx.fillRect(x,ground+24,31,2);ctx.fillRect(x+33,ground+45,17,1)}
+}
+function drawObstacle(o){
+ if(!images[o.name]){paintObstacle(o);return}
+ const key=o.name+':'+o.w+':'+o.h;
+ let sprite=obstacleCache.get(key);
+ if(!sprite){
+  sprite=document.createElement('canvas');sprite.width=o.w+24;sprite.height=o.h+24;
+  const saved=ctx;ctx=sprite.getContext('2d');ctx.translate(12-o.x,12+o.h-ground);
+  try{paintObstacle(o)}finally{ctx=saved}
+  obstacleCache.set(key,sprite);
+ }
+ ctx.drawImage(sprite,o.x-12,ground-o.h-12);
+}
 function render(){
  ctx.clearRect(0,0,W,H);drawCountryside();
  const previewing=app.mode==='preview',scale=previewing?1.65:.92,x=actorX();shadow(x,ground,previewing?65:36,app.jumpY);
  for(const o of app.obstacles){
   if(o.x>W+190)continue;
   if(o.name==='crow'||o.name==='chestnut'){
-   ctx.save();ctx.shadowColor='#fff1cd';ctx.shadowBlur=3;
-   ctx.shadowOffsetX=1;ctx.shadowOffsetY=2;
+   ctx.save();
    shadow(o.x+o.w/2,ground,o.w*.5,0);
    if(o.name==='crow')drawCrow(o);else drawChestnut(o);
    ctx.restore();
@@ -256,7 +286,7 @@ function render(){
 }
 
 function frame(ms){const elapsed=last?Math.min((ms-last)/1000,.1):0;last=ms;accumulator+=elapsed;while(accumulator+1e-10>=1/120){update(1/120);accumulator-=1/120}render();requestAnimationFrame(frame)}
-$('start').onclick=start;$('retry').onclick=start;$('back').onclick=preview;$('jump').onclick=jump;$('jumpMobile').onclick=jump;$('pause').onclick=pause;
+$('start').onclick=start;$('retry').onclick=start;$('back').onclick=preview;$('pause').onclick=pause;
 $('sound').onclick=()=>{app.sound=!app.sound;$('sound').textContent=app.sound?'소리 ON':'소리 OFF';$('sound').setAttribute('aria-pressed',String(app.sound));$('sound').setAttribute('aria-label',app.sound?'사운드 끄기':'사운드 켜기');beep(660,.12)};
 $('speed').oninput=e=>{app.rate=Number(e.target.value);$('speedValue').value=app.rate.toFixed(2)+'×'};
 $('slow').onclick=()=>{app.slow=!app.slow;$('slow').setAttribute('aria-pressed',String(app.slow))};

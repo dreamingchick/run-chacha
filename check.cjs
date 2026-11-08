@@ -3,11 +3,12 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const DT=1/120;
 function sandbox(){
  const nodes={},storage={},gradient={addColorStop(){}};
- const drawing=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>o[k]||(()=>{})});
+ const drawingStats={blurs:0,shadows:0,images:0};
+ const drawing=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>k==='drawImage'?(()=>drawingStats.images++):o[k]||(()=>{}),set:(o,k,v)=>{if(k==='filter'&&v.includes('blur'))drawingStats.blurs++;if(k==='shadowBlur'&&v>0)drawingStats.shadows++;o[k]=v;return true}});
  function element(id){return nodes[id]??={id,value:0,hidden:false,disabled:false,textContent:'',innerHTML:'',setAttribute(){},addEventListener(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>drawing,scrollIntoView(){},focus(){}}}
- const box={document:{getElementById:element,createElement:()=>element('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};
+ const box={drawingStats,document:{getElementById:element,createElement:()=>element('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};
  box.Math.random=()=>.5;vm.createContext(box);
- vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame,makeObstacle,actorBox,obstacleBox,sweptCollision,recoveryTime,gameConfig,START_SPEED,MAX_SPEED,setWorld:(w,h)=>{W=w;H=h;ground=h*.78},setRandom:f=>{Math.random=f}};',box);
+ vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame,makeObstacle,actorBox,obstacleBox,sweptCollision,recoveryTime,gameConfig,images,drawingStats,START_SPEED,MAX_SPEED,setWorld:(w,h)=>{W=w;H=h;ground=h*.78},setRandom:f=>{Math.random=f}};',box);
  return box.api;
 }
 function setup(multiplier=1){const a=sandbox();a.start();a.app.speed=a.START_SPEED*multiplier;a.app.distance=(a.app.speed-a.START_SPEED)/.0525;a.app.spawn=1e9;return a}
@@ -44,3 +45,13 @@ const cap=setup();cap.app.distance=1e9;cap.update(DT);assert.equal(cap.app.speed
 const source=fs.readFileSync('dist/chacha.js','utf8'),html=fs.readFileSync('dist/index.html','utf8');assert(source.includes("dispatchEvent(new Event('chacha:run-start'))"));assert(source.includes("dispatchEvent(new CustomEvent('chacha:run-end'"));assert(!html.includes('testStart'));assert(html.includes('id="rankV1"')&&html.includes('id="rankV2"'));
 console.log('PASS: production game hooks, v1/v2 tabs, no internal test controls');
 
+
+const graphics=setup();graphics.images.radish={};graphics.app.obstacles=[graphics.makeObstacle('giant-radish',500)];graphics.render();
+const warm={...graphics.drawingStats};
+for(let i=0;i<100;i++)graphics.render();
+assert.equal(graphics.drawingStats.blurs,warm.blurs,'background blur runs once, never during warmed frames');
+assert.equal(graphics.drawingStats.shadows,warm.shadows,'obstacle shadow runs once, never during warmed frames');
+assert.equal(graphics.drawingStats.images-warm.images,200,'one background and one obstacle image per frame');
+graphics.setWorld(640,500);graphics.render();assert.equal(graphics.drawingStats.blurs,warm.blurs+1,'resize rebuilds background');
+assert(!/id="(?:jump|jumpMobile)"/.test(html),'no jump buttons');assert(source.includes("canvas.addEventListener('pointerdown'"),'canvas touch jump retained');
+console.log('PASS: 100 warmed frames use zero blur/shadow passes and two image draws per frame; resize invalidation and touch-only UI');
