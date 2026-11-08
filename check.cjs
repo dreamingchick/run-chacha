@@ -8,7 +8,7 @@ function sandbox(){
  function element(id){return nodes[id]??={id,value:0,hidden:false,disabled:false,textContent:'',innerHTML:'',setAttribute(){},addEventListener(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>drawing,scrollIntoView(){},focus(){}}}
  const box={drawingStats,document:{getElementById:element,createElement:()=>element('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};
  box.Math.random=()=>.5;vm.createContext(box);
- vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame,makeObstacle,makeEncounter,smallSpacing,actorBox,obstacleBox,sweptCollision,recoveryTime,gameConfig,stageFor,STAGES,gameOver,images,drawingStats,START_SPEED,MAX_SPEED,setWorld:(w,h)=>{W=w;H=h;ground=h*.78},setRandom:f=>{Math.random=f}};',box);
+ vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame,makeObstacle,makeEncounter,smallSpacing,actorBox,obstacleBox,sweptCollision,recoveryTime,gameConfig,stageFor,sceneFor,SCENES,STAGES,gameOver,images,drawingStats,START_SPEED,MAX_SPEED,setWorld:(w,h)=>{W=w;H=h;ground=h*.78},setRandom:f=>{Math.random=f}};',box);
  return box.api;
 }
 function setup(multiplier=1){const a=sandbox();a.start();a.app.speed=a.START_SPEED*multiplier;a.app.distance=(a.app.speed-a.START_SPEED)/.0525;a.app.spawn=1e9;return a}
@@ -101,6 +101,16 @@ v3.gameConfig.invincible=true;v3.app.spawn=1e9;v3.app.obstacles=[v3.makeObstacle
 v3.app.obstacles=[{...v3.makeObstacle('radish',-100),hit:true}];v3.update(DT);assert.equal(v3.app.cleared,1,'hit objects do not count as cleared');
 v3.app.distance=1650;v3.gameOver();assert.equal(v3.app.best,1650);v3.start();assert.equal(v3.app.cleared,0);assert.equal(v3.app.distance,0);
 const scenes=setup();scenes.render();let blur=scenes.drawingStats.blurs;
-scenes.app.distance=500;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+1);scenes.render();assert.equal(scenes.drawingStats.blurs,blur+1);
-scenes.app.distance=1500;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+2);scenes.app.distance=0;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+2,'restarting reuses day scene');
+scenes.app.distance=1000;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+1);scenes.render();assert.equal(scenes.drawingStats.blurs,blur+1);
+scenes.app.distance=2000;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+2);scenes.app.distance=0;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+2,'restarting reuses day scene');
 console.log('PASS: v3 stage boundaries, gentle opening, clearance counter, best/reset and three reused scene caches');
+
+const cycle=setup();assert.equal(cycle.SCENES.length,6);
+for(let i=0;i<24;i++){
+ assert.equal(cycle.sceneFor(i*1000),i%6);assert.equal(cycle.sceneFor(i*1000+999.99),i%6);
+ cycle.app.distance=i*1000;cycle.render();
+}
+assert.equal(cycle.drawingStats.blurs,6,'all later loops reuse six cached backgrounds');
+assert.deepEqual([499,500,1499,1500,6000].map(cycle.stageFor),[0,1,1,2,2],'visual loops do not reset difficulty');
+assert(source.includes('chacha_v3_high_score'),'retain v3 personal best');
+console.log('PASS: 1000m scene boundaries, 24 periods / four cycles, six cached images, unchanged difficulty and v3 record key');

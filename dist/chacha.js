@@ -98,7 +98,7 @@ function actorX(){return app.mode==='preview'?W*.48:Math.min(100,W*.16)}
 function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start'));resetRun();$('result').hidden=true;$('start').hidden=true;$('pause').hidden=false;$('pause').textContent='잠깐 쉬기 Ⅱ';$('hint').hidden=true;$('modeLabel').textContent='차차, 달리는 중!';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=true;app.frozen=false;$('freeze').setAttribute('aria-pressed','false');$('freeze').textContent='동작 멈추기';$('instructions').innerHTML='<kbd>SPACE</kbd> 두 번 눌러 이중 점프 · <kbd>P</kbd> 일시정지';beep(660,.1)}
 function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;app.jumpsUsed=0;app.secondFlash=0;updateJumpLabel();$('result').hidden=true;$('start').hidden=false;$('pause').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 두 번 터치로 이중 점프'}
 function pause(){if(app.mode==='play'){app.mode='paused';$('pause').textContent='계속 달리기 ▷';$('modeLabel').textContent='차차, 쉬는 중'}else if(app.mode==='paused'){app.mode='play';$('pause').textContent='잠깐 쉬기 Ⅱ';$('modeLabel').textContent='차차, 달리는 중!'}}
-function updateStageLabel(){const stage=stageFor(app.distance);$('stageLabel').textContent=STAGES[stage].label}
+function updateStageLabel(){const stage=stageFor(app.distance);$('stageLabel').textContent=STAGES[stage].label+' · '+SCENES[sceneFor(app.distance)].label}
 function gameOver(){
  app.mode='over';beep(160,.35,'triangle');
  const score=Math.floor(app.distance),previous=app.best,isNew=score>previous;
@@ -147,6 +147,16 @@ const STAGES=[
  {from:500,label:'02 · 들판의 리듬',tight:.10,sky:['#e8c790','#f1d6a4']},
  {from:1500,label:'03 · 노을 속 도전',tight:.20,sky:['#be8e9f','#f1b78d']}
 ];
+// Visual cycle is independent of difficulty and scoring: six 1,000m periods.
+const SCENES=[
+ {label:'아침',sky:['#b9d2cf','#f1e5c4']},
+ {label:'낮',sky:['#8fc6d8','#e3edce']},
+ {label:'오후',sky:['#dfc68e','#f0d9aa']},
+ {label:'노을',sky:['#b885a1','#f1ac83']},
+ {label:'밤',sky:['#24314c','#58647b'],dark:true},
+ {label:'새벽',sky:['#686b91','#c5a6b5'],dark:true}
+];
+function sceneFor(distance){return Math.floor(Math.max(0,distance)/1000)%SCENES.length}
 function stageFor(distance){return distance<500?0:distance<1500?1:2}
 function makeEncounter(atX,speed,distance=2000){
  const stage=stageFor(distance);
@@ -247,16 +257,17 @@ function recoveryTime(o){
  const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight?2*SECOND_JUMP_SPEED/GRAVITY:0);
  return flight+.32+o.w/START_SPEED;
 }
-function paintCountryside(stage=0){
+function paintCountryside(scene=0){
+ const palette=SCENES[scene];
  const sky=ctx.createLinearGradient(0,0,0,ground);
- sky.addColorStop(0,STAGES[stage].sky[0]);sky.addColorStop(1,STAGES[stage].sky[1]);
+ sky.addColorStop(0,palette.sky[0]);sky.addColorStop(1,palette.sky[1]);
  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
  ctx.save();ctx.filter='blur(4px)';
- ellipse(W*.77,ground*.22,25,25,'#fff0c3');
+ ellipse(W*.77,ground*.22,palette.dark?19:25,palette.dark?19:25,palette.dark?'#e9e8d7':'#fff0c3');
  for(let layer=0;layer<2;layer++){
   const step=260,offset=(0*(layer?.12:.05))%step;
   for(let x=-step-offset;x<W+step;x+=step)
-   ellipse(x+130,ground*(layer?.87:.74),190,ground*(layer?.25:.28),layer?'#9cae83':'#b2bea0');
+   ellipse(x+130,ground*(layer?.87:.74),190,ground*(layer?.25:.28),palette.dark?(layer?'#66756f':'#78818a'):(layer?'#9cae83':'#b2bea0'));
  }
  const offset=(0*.18)%440;
  for(let x=-440-offset;x<W+440;x+=440){
@@ -267,7 +278,7 @@ function paintCountryside(stage=0){
   ellipse(x+269,ground-88,28,34,'#819b76');
  }
  ctx.restore();
- ctx.fillStyle='#eee8cd35';ctx.fillRect(0,0,W,ground);
+ ctx.fillStyle=palette.dark?'#8490a015':'#eee8cd35';ctx.fillRect(0,0,W,ground);
  ctx.fillStyle='#c4ba91';ctx.fillRect(0,ground,W,H-ground);
  ctx.fillStyle='#6d8051';ctx.fillRect(0,ground,W,3);
  for(let x=-(0%80);x<W;x+=80){ctx.fillStyle='#9e946e';ctx.fillRect(x,ground+24,31,2);ctx.fillRect(x+33,ground+45,17,1)}
@@ -292,13 +303,13 @@ let countrysideCache=null;
 const countrysideLayers=new Map();
 const obstacleCache=new Map();
 function drawCountryside(){
- const stage=stageFor(app.distance);
- const key=W+':'+H+':'+stage;
+ const scene=sceneFor(app.distance);
+ const key=W+':'+H+':'+scene;
  if(countrysideCache&&(countrysideCache.worldW!==W||countrysideCache.worldH!==H))countrysideLayers.clear();
  if(!countrysideLayers.has(key)){
   const layer=document.createElement('canvas');layer.width=Math.ceil(W*.5);layer.height=Math.ceil(H*.5);
   const saved=ctx;ctx=layer.getContext('2d');ctx.scale(.5,.5);
-  try{paintCountryside(stage)}finally{ctx=saved}
+  try{paintCountryside(scene)}finally{ctx=saved}
   countrysideLayers.set(key,{image:layer,worldW:W,worldH:H});
  }
  countrysideCache=countrysideLayers.get(key);
