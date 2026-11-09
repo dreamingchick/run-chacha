@@ -238,7 +238,7 @@ function update(dt){
  if(!app.jumpY&&groundContact(app.phase)&&Math.random()<dt*12)addDust(actorX()-20,ground-1,1);
  if(previewing)$('phase').value=app.phase;
  const next=app.obstacles.find(o=>!o.hit&&o.x+o.w>actorX()-23);
- $('nextObject').textContent=next?next.label+' · '+Math.max(0,(next.x-actorX()-24)/app.speed).toFixed(1)+'초 후'+(next.giant?' · 이중 점프':next.name==='crow'?' · 지상으로 통과':''):'다음 장애물 대기 중';
+ $('nextObject').textContent=next?next.label+(next.giant?' · 이중 점프':next.name==='crow'?' · 지상으로 통과':''):'다음 장애물 대기 중';
 }
 function drawCrow(o){
  const cx=o.x+o.w/2,cy=ground-o.bottom-o.h/2,flap=Math.sin(app.time*15+o.phase);

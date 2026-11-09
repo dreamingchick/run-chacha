@@ -1,6 +1,6 @@
 {
-  "version": "3.0.2",
-  "cache": "chacha-release-3.0.2-countryside",
+  "version": "3.0.3",
+  "cache": "chacha-release-3.0.3-countryside",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -11,15 +11,15 @@
     "assets/icon-512.png": "d59f49aaf9caa2f7527d1b48b2c830fd36a098fdca1cf0b7d679a12395e29463",
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
-    "chacha.js": "600ca9765805cfa9c347a3fe986635d9f64e763136538ed6cc181e8d7e9f1dba",
-    "index.html": "e9b9dec3bd8487ef0062bdb00b7f85ee3241c07a84669e320969cb9a2524778e",
+    "chacha.js": "0978d4dd0e896e767a919aea50afd511a53c4ad18d6ea34c99f7852039f47cc7",
+    "index.html": "de86a94865e0069b6ab93a66d830a88670a72cb1b2b7b10bdd3a64ea2b02e5c0",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
-    "notices.js": "106560f0c26d0018fc73e51db6562a7babeb64e00b090a731ded1a92aa75412a",
-    "patch-notes.html": "c6b1f8853e1c998ae8f4adc150d885e28f6b3a68c42bf3701ceb26e5f8514738",
-    "play.html": "e9b9dec3bd8487ef0062bdb00b7f85ee3241c07a84669e320969cb9a2524778e",
+    "notices.js": "d94d2a6e18a55e1f1d5d2b7ae0f3bc53e3c9a09bd37c1f7028141164cdbd2293",
+    "patch-notes.html": "dabc1da9e294409ac4815769112323753cfc603bc9445b605c14af5dc1914ac8",
+    "play.html": "de86a94865e0069b6ab93a66d830a88670a72cb1b2b7b10bdd3a64ea2b02e5c0",
     "pwa.js": "86cb68c50a4b63a1c762f9496e200e68762c6937675a594c4baf8234c0e3e45c",
     "ranking.js": "ced2e9ee1c57b1bcd2fe7bdcd6dd0165a2d02cfe9714840f46c820a3dd21505a",
-    "style.css": "00140b35e01a9f4dd0fd3887cc136261297abe0e92014861d22ffc637b5f67f4",
-    "sw.js": "7076b9e9fb3875df23093f4a3e71f1a44b7063fa28832d14184f77ab1453a016"
+    "style.css": "af9ec056836b649fd3f19cccac291b3695dafeeb31379e680e509da27123721d",
+    "sw.js": "4f406127a19cfa499c88141c564c169a5ca759cdeacff0722d01ecca3ca33724"
   }
 }
