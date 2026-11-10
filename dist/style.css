@@ -43,3 +43,7 @@ header .patch-link{text-decoration:none;display:inline-flex;align-items:center;w
   text-align: center !important;
 }
 
+
+/* Keep status above the obstacle flight paths. */
+.stage-top{align-items:flex-start}.stage-top #modeLabel{align-self:flex-start;margin:0}.hud #jumpState{display:none}.hud #stageLabel{position:absolute;top:0;left:50%;transform:translateX(-50%);width:max-content;max-width:40%;text-align:center;font-size:10px;line-height:1.5}.arena .next-object{top:42px;margin:0}.hud{max-width:30%}
+@media(max-width:540px){.arena .next-object{top:36px;font-size:9px}.hud #stageLabel{font-size:8px;max-width:38%}}
