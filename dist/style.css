@@ -18,3 +18,28 @@ header .patch-link{text-decoration:none;display:inline-flex;align-items:center;w
 
 /* Results participate in layout so the arena grows with text and buttons. */
 .arena{display:grid}.arena>canvas{grid-area:1/1;align-self:start;min-width:0}.arena>.result:not([hidden]){position:relative;inset:auto;grid-area:1/1;min-height:460px;height:auto;padding:26px 20px;box-sizing:border-box;gap:4px}.result>*{flex-shrink:0;max-width:100%}.result>p,.result>span,.run-summary dd{overflow-wrap:anywhere;text-align:center}.arena>.result #back{margin-top:8px}@media(max-width:600px){.arena>.result:not([hidden]){min-height:480px;padding:28px 16px;gap:5px}.arena>.result h2{font-size:44px;margin:10px 0}.arena>.result #resultStage{margin-bottom:10px}.arena>.result .primary{padding:12px 20px}}
+/* 1. 점프 횟수 표기 삭제 */
+.jump-info,
+#jumpCount,
+.jump-count {
+  display: none !important;
+}
+
+/* 2. 좌측 텍스트(러닝 타임 & 장애물 안내) 상단으로 이동 */
+.left-hud,
+.left-info,
+.hud-left {
+  top: 12px !important; /* 상단 여백을 줄여 위로 바짝 이동 */
+}
+
+/* 3. 스테이지 텍스트(01 · 시골길 적응) 상단 중앙으로 이동 */
+.stage-title,
+.track-title,
+#stageTitle {
+  position: absolute !important;
+  top: 12px !important;       /* 상단 위치 */
+  left: 50% !important;        /* 중앙 정렬 */
+  transform: translateX(-50%) !important;
+  text-align: center !important;
+}
+
