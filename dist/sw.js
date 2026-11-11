@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'chacha-release-3.0.4-countryside';
+const CACHE = 'chacha-release-3.0.4-visits';
 const FILES = [
  './','./index.html','./play.html','./patch-notes.html',
  './style.css?v=3.0.4','./chacha.js?v=3.0.4','./ranking.js?v=3.0.4','./pwa.js?v=3.0.4','./notices.js?v=3.0.4',

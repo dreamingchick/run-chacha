@@ -1,6 +1,6 @@
 {
   "version": "3.0.4",
-  "cache": "chacha-release-3.0.4-countryside",
+  "cache": "chacha-release-3.0.4-visits",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -12,14 +12,15 @@
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
     "chacha.js": "0978d4dd0e896e767a919aea50afd511a53c4ad18d6ea34c99f7852039f47cc7",
-    "index.html": "3896a02d2cd0c1fadde1e16ccd00ef9f248444e03042cfe0ec70ceb9e6b53785",
+    "index.html": "367d8bc92f1ab306a95238245e6f4a9f9c923412e0f0905096a9020307faa433",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
     "notices.js": "d94d2a6e18a55e1f1d5d2b7ae0f3bc53e3c9a09bd37c1f7028141164cdbd2293",
     "patch-notes.html": "dabc1da9e294409ac4815769112323753cfc603bc9445b605c14af5dc1914ac8",
-    "play.html": "3896a02d2cd0c1fadde1e16ccd00ef9f248444e03042cfe0ec70ceb9e6b53785",
+    "play.html": "367d8bc92f1ab306a95238245e6f4a9f9c923412e0f0905096a9020307faa433",
     "pwa.js": "86cb68c50a4b63a1c762f9496e200e68762c6937675a594c4baf8234c0e3e45c",
     "ranking.js": "ced2e9ee1c57b1bcd2fe7bdcd6dd0165a2d02cfe9714840f46c820a3dd21505a",
     "style.css": "0e0bc082937a542c9b32770b77188503ddb9c26d11fe08d7b44a67d77360034e",
-    "sw.js": "9237280608369214ce05a28a589e4e95c7aab43e9a57de77464726ee7d9510fb"
+    "sw.js": "0f1b380020ef79715bdd345309e806dbc3ceceec65486848f2e962cc75bd2fb4",
+    "visit.js": "f23f39a689b3b425051c548df0a6e173460ccf45c846f997bb2dc8188536dc0d"
   }
 }
