@@ -22,7 +22,15 @@ function encounter(kind,multiplier,second,width=1000){const x=setup(multiplier);
 for(const width of [640,1000])for(const multiplier of [1,2,5,10])for(const kind of ['giant-radish','giant-cabbage']){assert.equal(encounter(kind,multiplier,false,width).app.mode,'over',kind+' blocks one jump');assert.equal(encounter(kind,multiplier,true,width).app.mode,'play',`${kind} cleared at ${multiplier}x / ${width}px`)}
 for(const width of [640,1000])for(const multiplier of [1,2,5,10])
  assert.equal(encounter('chestnut',multiplier,false,width).app.mode,'play','one jump clears a chestnut');
-assert(singleApex+9<176-6);console.log('PASS: both giant vegetables require and allow double jump at 1/2/5/10x');
+for(const [kind,oldWidth] of [['giant-radish',88],['giant-cabbage',154]]){
+ const resized=a.makeObstacle(kind,500);
+ assert.equal(resized.w,oldWidth*.9);
+ assert.equal(resized.h,176*.9);
+ const hitBox=a.obstacleBox(resized);
+ assert(Math.abs(hitBox.right-hitBox.left-(resized.w-10))<1e-9);
+ assert(Math.abs(hitBox.bottom-hitBox.top-(resized.h-11))<1e-9);
+ assert(singleApex+9<resized.h-6);
+}console.log('PASS: both giant vegetables require and allow double jump at 1/2/5/10x');
 for(const bottom of [78,112,150,188]){const o=a.makeObstacle('crow',300,{bottom});assert(o.bottom===bottom&&o.w>70);assert(o.bottom+o.h<=236)}
 const crowGround=setup();crowGround.app.obstacles=[crowGround.makeObstacle('crow',crowGround.actorBox().right+10,{bottom:150})];step(crowGround,1.2);assert.equal(crowGround.app.mode,'play');const crowJump=encounter('crow',1,false);assert.equal(crowJump.app.mode,'over');
 // Exercise the production pairing roll directly, including its exact boundary.

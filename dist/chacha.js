@@ -7,7 +7,7 @@ let ctx=canvas.getContext('2d');
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t;
 const START_SPEED=311.04*1.5,MAX_SPEED=START_SPEED*10,GRAVITY=2340,JUMP_SPEED=750,SECOND_JUMP_SPEED=820;
 const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.10,MEDIUM_NUT_CHANCE=.12;
-const NUT_POP_TIME=.65;
+const NUT_POP_TIME=.65,GIANT_SCALE=.9;
 const CROW_LANES=[0,78,112,150,188],PAIRED_CROW_HEIGHT=112;
 const BEST_KEY='chacha_v4_high_score';
 const gameConfig={invincible:false};
@@ -163,7 +163,7 @@ function makeObstacle(kind='random',atX,options={}){
  if(kind==='medium-nut')return {name:kind,kind,w:70,h:86,bottom:0,x:atX,label:'중형 알밤 · 점프',giant:false};
  if(kind==='chestnut')return {name:'chestnut',kind,w:40,h:38,bottom:0,x:atX,phase:0,label:'밤송이',giant:false};
  const giant=kind.startsWith('giant-'),name=kind.replace('giant-','');
- return {name,kind,giant,w:giant?(name==='radish'?88:154):(name==='radish'?38:44),h:giant?176:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
+ return {name,kind,giant,w:giant?(name==='radish'?88:154)*GIANT_SCALE:(name==='radish'?38:44),h:giant?176*GIANT_SCALE:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
 }
 function smallSpacing(previous,next,speed){
  // Speed grows at 0.42%/second. Bound acceleration through the off-screen
@@ -187,6 +187,12 @@ const SCENES=[
 ];
 function sceneFor(distance){return Math.floor(Math.max(0,distance)/1000)%SCENES.length}
 function stageFor(distance){return distance<500?0:distance<1500?1:2}
+function pairWithCrow(vegetable){
+ const crow=makeObstacle('crow',vegetable.x,{bottom:PAIRED_CROW_HEIGHT});
+ crow.x+=(vegetable.w-crow.w)/2;
+ vegetable.pairedVegetable=crow.pairedVegetable=vegetable.label;
+ return [vegetable,crow];
+}
 function makeEncounter(atX,speed,distance=2000){
  const stage=stageFor(distance);
  // 20% of all encounters: ordinary-height obstacles, timed by horizontal
@@ -205,12 +211,8 @@ function makeEncounter(atX,speed,distance=2000){
  const first=makeObstacle(stage===0?smallObstacleKind():'random',atX),pattern=[first];
  if(first.giant||first.name==='crow'||first.name==='medium-nut')return pattern;
  const roll=Math.random(),count=stage===0?(roll<.7?1:2):roll<.1?1:roll<.55?2:3;
- if(count===1&&(first.name==='radish'||first.name==='cabbage')&&Math.random()<CROW_PAIR_CHANCE){
-  const crow=makeObstacle('crow',atX,{bottom:PAIRED_CROW_HEIGHT});
-  crow.x=first.x+(first.w-crow.w)/2;
-  first.pairedVegetable=crow.pairedVegetable=first.label;
-  pattern.push(crow);
- }
+ if(count===1&&(first.name==='radish'||first.name==='cabbage')&&Math.random()<CROW_PAIR_CHANCE)
+  return pairWithCrow(first);
  for(let i=1;i<count;i++){
   const next=makeObstacle(smallObstacleKind(),0),previous=pattern[i-1];
   next.x=previous.x+smallSpacing(previous,next,speed);pattern.push(next);
