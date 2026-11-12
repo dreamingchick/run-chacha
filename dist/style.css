@@ -54,8 +54,16 @@ header .patch-link{text-decoration:none;display:inline-flex;align-items:center;w
 
 .game-header .header-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 .game-header .header-actions .icon{display:inline-flex;align-items:center;justify-content:center;min-height:36px;margin:0;white-space:nowrap;line-height:1.2}
+.game-header .header-actions .round-action{
+ flex:0 0 44px;width:44px;height:44px;min-height:44px;
+ flex-direction:column;gap:2px;padding:0;border-radius:50%;line-height:1;
+}
+.game-header .round-action span+span{font-weight:750}
 @media(max-width:540px){
- .game-header{height:auto;min-height:70px;flex-wrap:wrap;gap:2px 12px;padding:10px 0}
- .game-header .header-actions{flex:1 0 100%;justify-content:flex-start;flex-wrap:wrap;margin:0}
- .game-header .header-actions .icon{min-height:44px;padding:8px 12px}
+ .game-header{gap:8px}
+ .game-header .brand{gap:6px;font-size:18px;letter-spacing:1px}
+ .game-header .paw{font-size:24px}
+ .game-header .brand-sub{display:none}
+ .game-header .header-actions{gap:6px}
+ .game-header .header-actions .patch-link{min-height:44px;padding:6px 8px}
 }
