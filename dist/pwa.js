@@ -17,7 +17,7 @@
       return Boolean(entered || sessionStorage.getItem('garu-arcade-entry') === '1');
     } catch { return Boolean(entered); }
   }
-  const fromArcade = cameFromArcade();
+  const fromArcade = true;
   if (fromArcade) {
     button.innerHTML = '<span>대문</span><span>홈</span>';
     button.setAttribute('aria-label', '가루 오락실 대문 홈으로 돌아가기');
