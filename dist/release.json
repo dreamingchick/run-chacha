@@ -1,6 +1,6 @@
 {
-  "version": "3.0.4",
-  "cache": "chacha-release-3.0.4-visits",
+  "version": "4.0.0",
+  "cache": "chacha-release-4.0.0-round-controls",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -11,16 +11,16 @@
     "assets/icon-512.png": "d59f49aaf9caa2f7527d1b48b2c830fd36a098fdca1cf0b7d679a12395e29463",
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
-    "chacha.js": "0978d4dd0e896e767a919aea50afd511a53c4ad18d6ea34c99f7852039f47cc7",
-    "index.html": "367d8bc92f1ab306a95238245e6f4a9f9c923412e0f0905096a9020307faa433",
+    "chacha.js": "94d33b24f09348d0b0f4cedb97cc454b7feb7c43d6e780b9bcad3777d803ed71",
+    "index.html": "343d47de58f5c8e445f1a0381737b42cb50a711b484e003e187a827bc10b54f7",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
-    "notices.js": "d94d2a6e18a55e1f1d5d2b7ae0f3bc53e3c9a09bd37c1f7028141164cdbd2293",
-    "patch-notes.html": "dabc1da9e294409ac4815769112323753cfc603bc9445b605c14af5dc1914ac8",
-    "play.html": "367d8bc92f1ab306a95238245e6f4a9f9c923412e0f0905096a9020307faa433",
+    "notices.js": "397747fb2ad21b011e873b0065dabda581eecc3ed38d0dee7cf53cb6adc41c44",
+    "patch-notes.html": "f6463cb6f3ca84e36320386cbc8de4a555018ccd96b3f05f6a0b92e9a90b2098",
+    "play.html": "343d47de58f5c8e445f1a0381737b42cb50a711b484e003e187a827bc10b54f7",
     "pwa.js": "86cb68c50a4b63a1c762f9496e200e68762c6937675a594c4baf8234c0e3e45c",
-    "ranking.js": "ced2e9ee1c57b1bcd2fe7bdcd6dd0165a2d02cfe9714840f46c820a3dd21505a",
-    "style.css": "0e0bc082937a542c9b32770b77188503ddb9c26d11fe08d7b44a67d77360034e",
-    "sw.js": "0f1b380020ef79715bdd345309e806dbc3ceceec65486848f2e962cc75bd2fb4",
+    "ranking.js": "46f287f57a6f0adfa7f6fb9f28d80f76a21c086efa0ce085afbcac315292be82",
+    "style.css": "627383dd293e10fd131211383224ec01c55c8719773fdd0b764ba43d753699ab",
+    "sw.js": "089f0a181053f8e4209af1d6faad1c018379d4c725ac280229cdb9d98c4785c8",
     "visit.js": "f23f39a689b3b425051c548df0a6e173460ccf45c846f997bb2dc8188536dc0d"
   }
 }

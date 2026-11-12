@@ -6,12 +6,18 @@ const $=id=>document.getElementById(id), canvas=$('game');
 let ctx=canvas.getContext('2d');
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t;
 const START_SPEED=311.04*1.5,MAX_SPEED=START_SPEED*10,GRAVITY=2340,JUMP_SPEED=750,SECOND_JUMP_SPEED=820;
-const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.24;
+const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.10,MEDIUM_NUT_CHANCE=.12;
+const NUT_POP_TIME=.65,GIANT_SCALE=.9;
+const CROW_LANES=[0,78,112,150,188],PAIRED_CROW_HEIGHT=112;
+const BEST_KEY='chacha_v4_high_score';
 const gameConfig={invincible:false};
 
 const app={mode:'preview',time:0,phase:0,rate:1,slow:false,frozen:false,distance:0,speed:START_SPEED,scroll:0,spawn:1.5,obstacles:[],dust:[],jumpY:0,vy:0,land:0,buffer:0,best:0,sound:false,jumpsUsed:0,secondFlash:0,hits:0};
 let W=1000,H=392, ground=290, last=0, accumulator=0,audio;
-try{const saved=Number(localStorage.getItem('chacha_v3_high_score'));app.best=Number.isFinite(saved)&&saved>=0?Math.floor(saved):0}catch{}
+function savedBest(){
+ try{const saved=Number(localStorage.getItem(BEST_KEY));return Number.isFinite(saved)&&saved>=0?Math.floor(saved):0}catch{return 0}
+}
+app.best=savedBest();
 $('best').innerHTML=app.best+' <small>m</small>';
 const images={};
 async function loadImage(name){
@@ -93,7 +99,16 @@ function drawDog(x,y,scale,phase,jump=0,vy=0,land=0){
 
 function shadow(x,y,size,jump){ellipse(x,y+3,size*(1-clamp(jump/300,0,.5)),size*.10,'#080d0870')}
 function addDust(x,y,n=2){for(let i=0;i<n;i++)app.dust.push({x,y,vx:-25-Math.random()*35,vy:-15-Math.random()*25,life:.45,size:2+Math.random()*3})}
-function beep(freq,duration,type='sine'){if(!app.sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.6,audio.currentTime+duration);g.gain.setValueAtTime(.06,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch{}}
+function beep(freq,duration,type='sine',delay=0){
+ if(!app.sound)return;
+ try{
+  audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();
+  const o=audio.createOscillator(),g=audio.createGain(),start=audio.currentTime+delay,end=start+duration;
+  o.type=type;o.frequency.setValueAtTime(freq,start);o.frequency.exponentialRampToValueAtTime(freq*.6,end);
+  g.gain.setValueAtTime(.06,start);g.gain.exponentialRampToValueAtTime(.001,end);
+  o.connect(g);g.connect(audio.destination);o.start(start);o.stop(end);
+ }catch{}
+}
 function actorX(){return app.mode==='preview'?W*.48:Math.min(100,W*.16)}
 function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start'));resetRun();$('result').hidden=true;$('start').hidden=true;$('pause').hidden=false;$('pause').textContent='잠깐 쉬기 Ⅱ';$('hint').hidden=true;$('modeLabel').textContent='차차, 달리는 중!';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=true;app.frozen=false;$('freeze').setAttribute('aria-pressed','false');$('freeze').textContent='동작 멈추기';$('instructions').innerHTML='<kbd>SPACE</kbd> 두 번 눌러 이중 점프 · <kbd>P</kbd> 일시정지';beep(660,.1)}
 function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;app.jumpsUsed=0;app.secondFlash=0;updateJumpLabel();$('result').hidden=true;$('start').hidden=false;$('pause').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 두 번 터치로 이중 점프'}
@@ -101,16 +116,16 @@ function pause(){if(app.mode==='play'){app.mode='paused';$('pause').textContent=
 function updateStageLabel(){const stage=stageFor(app.distance);$('stageLabel').textContent=STAGES[stage].label+' · '+SCENES[sceneFor(app.distance)].label}
 function gameOver(){
  app.mode='over';beep(160,.35,'triangle');
- const score=Math.floor(app.distance),previous=app.best,isNew=score>previous;
- app.best=Math.max(score,previous);try{localStorage.setItem('chacha_v3_high_score',String(app.best))}catch{}
+ const score=Math.floor(app.distance),previous=Math.max(app.best,savedBest()),isNew=score>previous;
+ app.best=Math.max(score,previous);if(isNew)try{localStorage.setItem(BEST_KEY,String(app.best))}catch{}
  $('best').innerHTML=app.best+' <small>m</small>';$('final').textContent=score;
- $('resultNote').textContent=isNew?'새로운 v3 최고 기록!':'다음에는 조금 더 멀리!';
+ $('resultNote').textContent=isNew?'새로운 v4 최고 기록!':'최고 기록을 넘어야 랭킹에 등록할 수 있어요.';
  $('resultCleared').textContent=(app.cleared||0)+'개';
  $('resultBest').textContent=previous+' m';
  $('resultGap').textContent=isNew?'최고 기록 +'+(score-previous)+' m':'최고 기록까지 '+(previous-score)+' m';
  $('resultStage').textContent=STAGES[stageFor(app.distance)].label;
  $('result').hidden=false;$('pause').hidden=true;
- window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks}}));
+ window.dispatchEvent(new CustomEvent('chacha:run-end',{detail:{score,ticks:app.runTicks,isNew}}));
 }
 function jump(){
  if(app.mode==='over'||app.mode==='paused')return;
@@ -126,15 +141,29 @@ function updateJumpLabel(){
  $('jumpState').textContent='점프 '+(2-app.jumpsUsed)+'/2';
 
 }
+function smallObstacleKind(){
+ const roll=Math.random();
+ if(roll<CHESTNUT_CHANCE)return 'chestnut';
+ return roll<(1+CHESTNUT_CHANCE)/2?'radish':'cabbage';
+}
 function makeObstacle(kind='random',atX,options={}){
  if(kind==='random'){
   if(options.crow===true||(options.crow!==false&&Math.random()<CROW_CHANCE))kind='crow';
-  else kind=(Math.random()<GIANT_CHANCE?'giant-':'')+(Math.random()<.5?'radish':'cabbage');
+  else{
+   const sizeRoll=Math.random();
+   if(sizeRoll<GIANT_CHANCE)kind=Math.random()<.5?'giant-radish':'giant-cabbage';
+   else if(sizeRoll<GIANT_CHANCE+MEDIUM_NUT_CHANCE)kind='medium-nut';
+   else kind=smallObstacleKind();
+  }
  }
- if(kind==='crow'){const bottom=options.bottom??[78,112,150,188][Math.floor(Math.random()*4)];return {name:'crow',kind,w:82,h:48,bottom,x:atX,phase:Math.random()*TAU,label:`까마귀 ${bottom<120?'낮게':'높게'}`,giant:false};}
+ if(kind==='crow'){
+  const bottom=options.bottom??CROW_LANES[Math.floor(Math.random()*CROW_LANES.length)],seated=bottom===0;
+  return {name:'crow',kind,w:seated?60:82,h:seated?34:48,bottom,x:atX,phase:seated?0:Math.random()*TAU,label:seated?'앉은 까마귀 · 점프':`까마귀 ${bottom<120?'낮게':'높게'} · 지상으로 통과`,giant:false};
+ }
+ if(kind==='medium-nut')return {name:kind,kind,w:70,h:86,bottom:0,x:atX,label:'중형 알밤 · 점프',giant:false};
  if(kind==='chestnut')return {name:'chestnut',kind,w:40,h:38,bottom:0,x:atX,phase:0,label:'밤송이',giant:false};
  const giant=kind.startsWith('giant-'),name=kind.replace('giant-','');
- return {name,kind,giant,w:giant?(name==='radish'?88:154):(name==='radish'?38:44),h:giant?176:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
+ return {name,kind,giant,w:giant?(name==='radish'?88:154)*GIANT_SCALE:(name==='radish'?38:44),h:giant?176*GIANT_SCALE:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
 }
 function smallSpacing(previous,next,speed){
  // Speed grows at 0.42%/second. Bound acceleration through the off-screen
@@ -158,14 +187,20 @@ const SCENES=[
 ];
 function sceneFor(distance){return Math.floor(Math.max(0,distance)/1000)%SCENES.length}
 function stageFor(distance){return distance<500?0:distance<1500?1:2}
+function pairWithCrow(vegetable){
+ const crow=makeObstacle('crow',vegetable.x,{bottom:PAIRED_CROW_HEIGHT});
+ crow.x+=(vegetable.w-crow.w)/2;
+ vegetable.pairedVegetable=crow.pairedVegetable=vegetable.label;
+ return [vegetable,crow];
+}
 function makeEncounter(atX,speed,distance=2000){
  const stage=stageFor(distance);
- // 20% of all encounters: ordinary-height vegetables, timed by horizontal
+ // 20% of all encounters: ordinary-height obstacles, timed by horizontal
  // collision span. Pairs have a narrow single-jump window; triples exceed it.
  if(Math.random()<STAGES[stage].tight){
   const count=Math.random()<.5?2:3,cluster=[];
   for(let i=0;i<count;i++){
-   const o=makeObstacle(Math.random()<.5?'radish':'cabbage',0);
+   const o=makeObstacle(smallObstacleKind(),0);
    Object.assign(o,{tight:true,label:count===2?'밀집 2연속 · 점프 타이밍 주의':'밀집 3연속 · 이중 점프'});cluster.push(o);
   }
   const arrivalSpeed=Math.min(MAX_SPEED,speed*Math.exp(.0042*8));
@@ -173,11 +208,13 @@ function makeEncounter(atX,speed,distance=2000){
   for(const o of cluster){o.x=atX;atX+=o.w+gap}
   return cluster;
  }
- const first=makeObstacle(stage===0?(Math.random()<.5?'radish':'cabbage'):'random',atX),pattern=[first];
- if(first.giant||first.name==='crow')return pattern;
+ const first=makeObstacle(stage===0?smallObstacleKind():'random',atX),pattern=[first];
+ if(first.giant||first.name==='crow'||first.name==='medium-nut')return pattern;
  const roll=Math.random(),count=stage===0?(roll<.7?1:2):roll<.1?1:roll<.55?2:3;
+ if(count===1&&(first.name==='radish'||first.name==='cabbage')&&Math.random()<CROW_PAIR_CHANCE)
+  return pairWithCrow(first);
  for(let i=1;i<count;i++){
-  const next=makeObstacle(Math.random()<.5?'radish':'cabbage',0),previous=pattern[i-1];
+  const next=makeObstacle(smallObstacleKind(),0),previous=pattern[i-1];
   next.x=previous.x+smallSpacing(previous,next,speed);pattern.push(next);
  }
  return pattern;
@@ -213,13 +250,17 @@ function update(dt){
   app.runTicks++;app.distance+=app.speed*t*.08;
   app.speed=Math.min(MAX_SPEED,Math.max(START_SPEED,START_SPEED+app.distance*.0525));
   app.spawn-=t;
-  // One encounter at a time; only small ground vegetables form sequences.
+  // Finish the current encounter and its recovery before spawning another.
   if(app.spawn<=0&&app.obstacles.length===0){
    app.obstacles.push(...makeEncounter(W+app.speed*1.15,app.speed,app.distance));app.spawn=0;
   }
   const newActor=actorBox();
   for(const o of app.obstacles){
    const before=obstacleBox(o);o.x-=app.speed*t;const after=obstacleBox(o);
+   if(o.name==='medium-nut'&&o.x<W&&o.enteredAt===undefined){
+    o.enteredAt=app.time;
+    beep(523,.13,'triangle');beep(784,.22,'triangle',.10);
+   }
    if(sweptCollision(oldActor,newActor,before,after)&&!o.hit){
     o.hit=true;app.hits++;
     if(!gameConfig.invincible){gameOver();break}
@@ -238,9 +279,30 @@ function update(dt){
  if(!app.jumpY&&groundContact(app.phase)&&Math.random()<dt*12)addDust(actorX()-20,ground-1,1);
  if(previewing)$('phase').value=app.phase;
  const next=app.obstacles.find(o=>!o.hit&&o.x+o.w>actorX()-23);
- $('nextObject').textContent=next?next.label+(next.giant?' · 이중 점프':next.name==='crow'?' · 지상으로 통과':''):'다음 장애물 대기 중';
+ const nextObject=$('nextObject');
+ const label=!next?'다음 장애물 대기 중':next.pairedVegetable
+  ?next.pairedVegetable+' 위 까마귀 · 이중 점프'
+  :next.label+(next.giant?' · 이중 점프':'');
+ if(nextObject.textContent!==label){
+  nextObject.textContent=label;
+  nextObject.classList.toggle('giant-warning',Boolean(next?.giant));
+ }
+}
+function drawSeatedCrow(o){
+ ctx.save();ctx.translate(o.x+o.w/2,ground);ctx.scale(-1,1);
+ ctx.fillStyle='#11141f';ctx.beginPath();ctx.moveTo(-9,-18);ctx.lineTo(-28,-11);ctx.lineTo(-24,-6);ctx.lineTo(-5,-9);ctx.closePath();ctx.fill();
+ ellipse(0,-13,21,10,'#202434',-.12);
+ ellipse(0,-15,15,6,'#30344c',-.18);
+ ellipse(13,-24,9,9,'#171c28');
+ ctx.fillStyle='#adb4b5';ctx.beginPath();ctx.moveTo(19,-26);ctx.lineTo(27,-22);ctx.lineTo(19,-20);ctx.closePath();ctx.fill();
+ line([[1,-7],[3,-2],[8,-2]],'#28282d',2);
+ line([[10,-7],[12,-2],[17,-2]],'#28282d',2);
+ ellipse(16,-26,1.5,1.5,'#edc47c');
+ ctx.restore();
 }
 function drawCrow(o){
+ if(o.bottom===0){drawSeatedCrow(o);return}
+
  const cx=o.x+o.w/2,cy=ground-o.bottom-o.h/2,flap=Math.sin(app.time*15+o.phase);
  ctx.save();ctx.translate(cx,cy);ctx.scale(-1,1);
  // Raven silhouette: pointed beak, fan tail, animated wings and violet feather highlights.
@@ -251,10 +313,56 @@ function drawCrow(o){
  ctx.strokeStyle='#606385';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-7,-8);ctx.lineTo(-24,-23-flap*18);ctx.stroke();
  ellipse(21,-10,2,2,'#edc47c');ctx.restore();
 }
-function drawChestnut(o){const x=o.x+o.w/2,y=ground-o.h/2;ctx.save();ctx.translate(x,y);ctx.fillStyle='#71351f';ctx.beginPath();ctx.arc(0,4,17,Math.PI,0);ctx.lineTo(17,6);ctx.lineTo(-17,6);ctx.closePath();ctx.fill();ctx.strokeStyle='#f4d486';ctx.lineWidth=2.2;for(let i=0;i<9;i++){const a=Math.PI+i*Math.PI/8;ctx.beginPath();ctx.moveTo(Math.cos(a)*8,3+Math.sin(a)*8);ctx.lineTo(Math.cos(a)*23,3+Math.sin(a)*23);ctx.stroke()}ctx.fillStyle='#2b2219';ctx.beginPath();ctx.arc(0,4,2,0,TAU);ctx.fill();ctx.restore()}
+function drawChestnut(o){
+ ctx.save();ctx.translate(o.x+o.w/2,ground-o.h/2);
+ ctx.beginPath();
+ const spikes=22;
+ for(let i=0;i<spikes*2;i++){
+  const angle=i*Math.PI/spikes;
+  const radius=i%2===0?1:.67;
+  const x=Math.cos(angle)*radius*19,y=Math.sin(angle)*radius*18;
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+ }
+ ctx.closePath();ctx.lineJoin='round';ctx.lineWidth=1.6;
+ ctx.fillStyle='#be873b';ctx.fill();ctx.strokeStyle='#51301b';ctx.stroke();
+ ellipse(0,0,12,11,'#9a602c');
+ ellipse(-3,-3,7,5,'#d39b4d',-.32);
+ for(let i=0;i<6;i++){
+  const angle=i*TAU/6;
+  line([[Math.cos(angle)*6,Math.sin(angle)*5],[Math.cos(angle+.16)*11,Math.sin(angle+.16)*10]],'#693d20',1);
+ }
+ ctx.restore();
+}
+function drawMediumNut(o){
+ ctx.save();ctx.translate(o.x+o.w/2,ground);
+ const shell=ctx.createLinearGradient(-25,-72,24,-9);
+ shell.addColorStop(0,'#e09a57');shell.addColorStop(.48,'#a4532c');shell.addColorStop(1,'#622c1c');
+ ctx.beginPath();ctx.moveTo(2,-83);
+ ctx.bezierCurveTo(8,-72,32,-66,34,-38);
+ ctx.bezierCurveTo(38,-12,23,-3,0,-3);
+ ctx.bezierCurveTo(-24,-3,-36,-12,-34,-36);
+ ctx.bezierCurveTo(-32,-62,-7,-73,2,-83);
+ ctx.closePath();ctx.fillStyle=shell;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#492819';ctx.stroke();
+ ctx.beginPath();ctx.moveTo(-30,-20);ctx.quadraticCurveTo(0,-37,30,-20);
+ ctx.quadraticCurveTo(26,-4,0,-4);ctx.quadraticCurveTo(-26,-4,-30,-20);
+ ctx.fillStyle='#e9bd7c';ctx.fill();
+ line([[-16,-18],[-6,-15],[5,-15],[15,-18]],'#b68149',2);
+ ellipse(-14,-51,5,15,'#f2bd7a',.47);
+ ctx.restore();
+}
+function drawNutPop(o){
+ const progress=(app.time-o.enteredAt)/NUT_POP_TIME;
+ if(!Number.isFinite(progress)||progress>=1)return;
+ const x=clamp(o.x+o.w/2,65,W-65),y=ground-o.h-22-progress*21;
+ ctx.save();ctx.globalAlpha=1-clamp((progress-.58)/.42,0,1);
+ ctx.font='900 34px sans-serif';ctx.textAlign='center';ctx.lineJoin='round';
+ ctx.strokeStyle='#6a2d1b';ctx.lineWidth=6;ctx.fillStyle='#ffdf69';
+ ctx.strokeText('빠밤!',x,y);ctx.fillText('빠밤!',x,y);
+ ctx.restore();
+}
 function recoveryTime(o){
  // Worst double-jump flight: second impulse just before first landing.
- const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight?2*SECOND_JUMP_SPEED/GRAVITY:0);
+ const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight||o.pairedVegetable?2*SECOND_JUMP_SPEED/GRAVITY:0);
  return flight+.32+o.w/START_SPEED;
 }
 function paintCountryside(scene=0){
@@ -334,14 +442,23 @@ function render(){
  const previewing=app.mode==='preview',scale=previewing?1.65:.92,x=actorX();shadow(x,ground,previewing?65:36,app.jumpY);
  for(const o of app.obstacles){
   if(o.x>W+190)continue;
-  if(o.name==='crow'||o.name==='chestnut'){
+  if(o.name==='crow'||o.name==='chestnut'||o.name==='medium-nut'){
    ctx.save();
-   shadow(o.x+o.w/2,ground,o.w*.5,0);
-   if(o.name==='crow')drawCrow(o);else drawChestnut(o);
+   if(!o.pairedVegetable)shadow(o.x+o.w/2,ground,o.w*.5,0);
+   if(o.name==='crow')drawCrow(o);
+   else if(o.name==='medium-nut'){drawMediumNut(o);drawNutPop(o)}
+   else drawChestnut(o);
    ctx.restore();
   }else{
    drawObstacle(o);
-   if(o.giant){ctx.fillStyle='#263524';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('2단 점프',o.x+o.w/2,ground-o.h-10);ctx.textAlign='left'}
+   if(o.giant){
+    ctx.save();
+    ctx.font='900 22px sans-serif';ctx.textAlign='center';ctx.lineJoin='round';
+    ctx.fillStyle='#fff09e';ctx.strokeStyle='#38200f';ctx.lineWidth=5;
+    const x=o.x+o.w/2,y=ground-o.h-12;
+    ctx.strokeText('이중 점프',x,y);ctx.fillText('이중 점프',x,y);
+    ctx.restore();
+   }
   }
  }
  for(const p of app.dust){ctx.globalAlpha=p.life*.7;ellipse(p.x,p.y,p.size,p.size*.65,'#a0b28d')}ctx.globalAlpha=1;
@@ -352,7 +469,7 @@ function render(){
 
 function frame(ms){const elapsed=last?Math.min((ms-last)/1000,.1):0;last=ms;accumulator+=elapsed;while(accumulator+1e-10>=1/120){update(1/120);accumulator-=1/120}render();requestAnimationFrame(frame)}
 $('start').onclick=start;$('retry').onclick=start;$('back').onclick=preview;$('pause').onclick=pause;
-$('sound').onclick=()=>{app.sound=!app.sound;$('sound').textContent=app.sound?'소리 ON':'소리 OFF';$('sound').setAttribute('aria-pressed',String(app.sound));$('sound').setAttribute('aria-label',app.sound?'사운드 끄기':'사운드 켜기');beep(660,.12)};
+$('sound').onclick=()=>{app.sound=!app.sound;$('soundState').textContent=app.sound?'ON':'OFF';$('sound').setAttribute('aria-pressed',String(app.sound));$('sound').setAttribute('aria-label',app.sound?'사운드 끄기':'사운드 켜기');beep(660,.12)};
 $('speed').oninput=e=>{app.rate=Number(e.target.value);$('speedValue').value=app.rate.toFixed(2)+'×'};
 $('slow').onclick=()=>{app.slow=!app.slow;$('slow').setAttribute('aria-pressed',String(app.slow))};
 $('freeze').onclick=()=>{app.frozen=!app.frozen;$('freeze').setAttribute('aria-pressed',String(app.frozen));$('freeze').textContent=app.frozen?'동작 재생하기':'동작 멈추기'};

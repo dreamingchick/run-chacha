@@ -1,8 +1,8 @@
 'use strict';
 (() => {
  const queue=[
-  ['chacha_patchnote_v303_seen','patchNotice'],
-  ['chacha_ranking_v3_notice_seen','rankingNotice']
+  ['chacha_patchnote_v400_seen','patchNotice'],
+  ['chacha_ranking_v4_notice_seen','rankingNotice']
  ];
  async function showFirstVisitNotices(){
   for(const [key,id] of queue){
