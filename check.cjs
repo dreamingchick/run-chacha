@@ -5,7 +5,7 @@ function sandbox(){
  const nodes={},storage={},gradient={addColorStop(){}};
  const drawingStats={blurs:0,shadows:0,images:0};
  const drawing=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>k==='drawImage'?(()=>drawingStats.images++):o[k]||(()=>{}),set:(o,k,v)=>{if(k==='filter'&&v.includes('blur'))drawingStats.blurs++;if(k==='shadowBlur'&&v>0)drawingStats.shadows++;o[k]=v;return true}});
- function element(id){return nodes[id]??={id,value:0,hidden:false,disabled:false,textContent:'',innerHTML:'',setAttribute(){},addEventListener(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>drawing,scrollIntoView(){},focus(){}}}
+ function element(id){return nodes[id]??={id,value:0,hidden:false,disabled:false,textContent:'',classList:{toggle(){}},innerHTML:'',setAttribute(){},addEventListener(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>drawing,scrollIntoView(){},focus(){}}}
  const box={drawingStats,document:{getElementById:element,createElement:()=>element('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};
  box.Math.random=()=>.5;vm.createContext(box);
  vm.runInContext(fs.readFileSync('dist/chacha.js','utf8')+'\nthis.api={app,update,start,jump,pause,preview,legPose,gaitBody,groundContact,render,frame,makeObstacle,makeEncounter,smallSpacing,actorBox,obstacleBox,sweptCollision,recoveryTime,gameConfig,stageFor,sceneFor,SCENES,STAGES,gameOver,images,drawingStats,START_SPEED,MAX_SPEED,setWorld:(w,h)=>{W=w;H=h;ground=h*.78},setRandom:f=>{Math.random=f}};',box);
@@ -20,20 +20,23 @@ const twice=setup();twice.jump();let doubleApex=0;for(let i=0;i<200;i++){if(i===
 assert(singleApex>115&&singleApex<122);assert(doubleApex>250&&doubleApex<270);console.log(`PASS: double jump, landing reset; apex ${singleApex.toFixed(1)} / ${doubleApex.toFixed(1)}`);
 function encounter(kind,multiplier,second,width=1000){const x=setup(multiplier);x.setWorld(width,480);const actor=x.actorBox(),obstacle=x.makeObstacle(kind,actor.right+x.app.speed*.42-5);x.app.obstacles=[obstacle];x.jump();for(let i=0;i<200&&x.app.mode!=='over';i++){if(second&&i===36)x.jump();x.update(DT)}return x}
 for(const width of [640,1000])for(const multiplier of [1,2,5,10])for(const kind of ['giant-radish','giant-cabbage']){assert.equal(encounter(kind,multiplier,false,width).app.mode,'over',kind+' blocks one jump');assert.equal(encounter(kind,multiplier,true,width).app.mode,'play',`${kind} cleared at ${multiplier}x / ${width}px`)}
+for(const width of [640,1000])for(const multiplier of [1,2,5,10])
+ assert.equal(encounter('chestnut',multiplier,false,width).app.mode,'play','one jump clears a chestnut');
 assert(singleApex+9<176-6);console.log('PASS: both giant vegetables require and allow double jump at 1/2/5/10x');
 for(const bottom of [78,112,150,188]){const o=a.makeObstacle('crow',300,{bottom});assert(o.bottom===bottom&&o.w>70);assert(o.bottom+o.h<=236)}
 const crowGround=setup();crowGround.app.obstacles=[crowGround.makeObstacle('crow',crowGround.actorBox().right+10,{bottom:150})];step(crowGround,1.2);assert.equal(crowGround.app.mode,'play');const crowJump=encounter('crow',1,false);assert.equal(crowJump.app.mode,'over');
 const swept=setup();assert(swept.sweptCollision({left:0,right:20,top:0,bottom:20},{left:0,right:20,top:0,bottom:20},{left:200,right:220,top:0,bottom:20},{left:-200,right:-180,top:0,bottom:20}));
 const paused=setup();paused.pause();paused.jump();assert.equal(paused.app.jumpsUsed,0);const distance=paused.app.distance;step(paused,1);assert.equal(paused.app.distance,distance);paused.pause();paused.app.mode='over';paused.jump();assert.equal(paused.app.jumpsUsed,0);console.log('PASS: four crow lanes, ground/jump avoidance, swept collision, pause guards');
 // Real generated encounters preserve large/crow isolation and safe small chains.
-const mix=setup();let seed=12345;mix.setRandom(()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296});const counts=new Set();let giants=0,crows=0;
+const mix=setup();let seed=12345;mix.setRandom(()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296});const counts=new Set();let giants=0,crows=0,chestnuts=0;
 for(let i=0;i<3000;i++){
  const pattern=mix.makeEncounter(2000,mix.START_SPEED);counts.add(pattern.length);
  if(pattern[0].giant&&!pattern[0].tight){giants++;assert.equal(pattern.length,1)}
  if(pattern[0].name==='crow'){crows++;assert.equal(pattern.length,1)}
- if(pattern.length>1)assert(pattern.every(o=>(!o.giant||o.tight)&&o.bottom===0&&['radish','cabbage'].includes(o.name)));
+ for(const o of pattern)if(o.name==='chestnut'){chestnuts++;assert(!o.giant&&o.h<=46&&o.bottom===0)}
+ if(pattern.length>1)assert(pattern.every(o=>!o.giant&&o.bottom===0&&['radish','cabbage','chestnut'].includes(o.name)));
 }
-assert.deepEqual([...counts].sort(),[1,2,3]);assert(giants>0&&crows>0);
+assert.deepEqual([...counts].sort(),[1,2,3]);assert(giants>0&&crows>0&&chestnuts>0);
 for(const width of [640,1000])for(const multi of [1,2,5,10])for(const count of [2,3]){
  const x=setup(multi);x.setWorld(width,480);let last=null;
  const pattern=Array.from({length:count},(_,i)=>{const o=x.makeObstacle(i%2?'cabbage':'radish',0);o.x=last?last.x+x.smallSpacing(last,o,x.app.speed):x.actorBox().right+x.app.speed*.16-5;last=o;return o});
@@ -93,17 +96,18 @@ for(const width of [640,1000])for(const multi of [1,2,5,10])for(const count of [
 }
 console.log('PASS: 20% ordinary-height tight clusters; pairs allow precise single jumps, triples need double jumps, all speeds and widths');
 
-const v3=setup();assert.equal(v3.app.best,0,'v3 starts with isolated local best');
-assert.deepEqual([0,499,500,1499,1500].map(v3.stageFor),[0,0,1,1,2]);
-let state=945;v3.setRandom(()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296});
-for(let i=0;i<1000;i++){const p=v3.makeEncounter(2000,v3.START_SPEED,0);assert(p.length<=2);assert(p.every(o=>!o.giant&&!o.tight&&o.name!=='crow'))}
-v3.gameConfig.invincible=true;v3.app.spawn=1e9;v3.app.obstacles=[v3.makeObstacle('radish',-100)];v3.update(DT);assert.equal(v3.app.cleared,1);v3.update(DT);assert.equal(v3.app.cleared,1,'count clearance only once');
-v3.app.obstacles=[{...v3.makeObstacle('radish',-100),hit:true}];v3.update(DT);assert.equal(v3.app.cleared,1,'hit objects do not count as cleared');
-v3.app.distance=1650;v3.gameOver();assert.equal(v3.app.best,1650);v3.start();assert.equal(v3.app.cleared,0);assert.equal(v3.app.distance,0);
+const v4=setup();assert.equal(v4.app.best,0,'v4 starts with isolated local best');
+assert.deepEqual([0,499,500,1499,1500].map(v4.stageFor),[0,0,1,1,2]);
+let openingChestnuts=0,state=945;v4.setRandom(()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296});
+for(let i=0;i<1000;i++){const p=v4.makeEncounter(2000,v4.START_SPEED,0);assert(p.length<=2);assert(p.every(o=>!o.giant&&!o.tight&&o.name!=='crow'));openingChestnuts+=p.filter(o=>o.name==='chestnut').length}
+assert(openingChestnuts>0,'chestnuts appear during the opening');
+v4.gameConfig.invincible=true;v4.app.spawn=1e9;v4.app.obstacles=[v4.makeObstacle('radish',-100)];v4.update(DT);assert.equal(v4.app.cleared,1);v4.update(DT);assert.equal(v4.app.cleared,1,'count clearance only once');
+v4.app.obstacles=[{...v4.makeObstacle('radish',-100),hit:true}];v4.update(DT);assert.equal(v4.app.cleared,1,'hit objects do not count as cleared');
+v4.app.distance=1650;v4.gameOver();assert.equal(v4.app.best,1650);v4.start();assert.equal(v4.app.cleared,0);assert.equal(v4.app.distance,0);
 const scenes=setup();scenes.render();let blur=scenes.drawingStats.blurs;
 scenes.app.distance=1000;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+1);scenes.render();assert.equal(scenes.drawingStats.blurs,blur+1);
 scenes.app.distance=2000;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+2);scenes.app.distance=0;scenes.render();assert.equal(scenes.drawingStats.blurs,blur+2,'restarting reuses day scene');
-console.log('PASS: v3 stage boundaries, gentle opening, clearance counter, best/reset and three reused scene caches');
+console.log('PASS: v4 stage boundaries, gentle opening, clearance counter, best/reset and three reused scene caches');
 
 const cycle=setup();assert.equal(cycle.SCENES.length,6);
 for(let i=0;i<24;i++){
@@ -112,5 +116,5 @@ for(let i=0;i<24;i++){
 }
 assert.equal(cycle.drawingStats.blurs,6,'all later loops reuse six cached backgrounds');
 assert.deepEqual([499,500,1499,1500,6000].map(cycle.stageFor),[0,1,1,2,2],'visual loops do not reset difficulty');
-assert(source.includes('chacha_v3_high_score'),'retain v3 personal best');
-console.log('PASS: 1000m scene boundaries, 24 periods / four cycles, six cached images, unchanged difficulty and v3 record key');
+assert(source.includes('chacha_v4_high_score'),'retain v4 personal best');
+console.log('PASS: 1000m scene boundaries, 24 periods / four cycles, six cached images, unchanged difficulty and v4 record key');

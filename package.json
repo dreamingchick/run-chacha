@@ -1,6 +1,6 @@
 {
   "name": "run-chacha",
-  "version": "1.1.0",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
     "build": "python scripts/restore-assets.py",
