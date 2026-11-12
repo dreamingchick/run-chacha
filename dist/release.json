@@ -1,6 +1,6 @@
 {
   "version": "4.0.0",
-  "cache": "chacha-release-4.0.0-round-controls",
+  "cache": "chacha-release-4.0.0-arcade",
   "files": {
     "assets/apple-touch-icon.png": "8c04d08f591994d1e6522858eedfd1fc7af44f1e91a8f063a290f9b1bd0b88d7",
     "assets/cabbage.jpg": "018e6c6832190b994972878364bfd831106735f0804c00182eef658e4a085369",
@@ -12,15 +12,15 @@
     "assets/icon-maskable.png": "f575d1419dd850aa365f78f797885d957fbb3b892db8e08e4a77c40a70fd9a17",
     "assets/radish.jpg": "882fdce17977dfd44280b2081c64f1df0e1d3761ddd44f150d3bd953f510f4bd",
     "chacha.js": "94d33b24f09348d0b0f4cedb97cc454b7feb7c43d6e780b9bcad3777d803ed71",
-    "index.html": "343d47de58f5c8e445f1a0381737b42cb50a711b484e003e187a827bc10b54f7",
+    "index.html": "3869c113d0cb8398165ea8a6ae3d4620e7a7b46b66bdbcea802369eb46c5b5c1",
     "manifest.webmanifest": "4fccd65e1d59e50558b94c0c5139f7392f32cca41f1b2f501fe3167cd2e80fa2",
     "notices.js": "397747fb2ad21b011e873b0065dabda581eecc3ed38d0dee7cf53cb6adc41c44",
     "patch-notes.html": "f6463cb6f3ca84e36320386cbc8de4a555018ccd96b3f05f6a0b92e9a90b2098",
-    "play.html": "343d47de58f5c8e445f1a0381737b42cb50a711b484e003e187a827bc10b54f7",
-    "pwa.js": "86cb68c50a4b63a1c762f9496e200e68762c6937675a594c4baf8234c0e3e45c",
+    "play.html": "3869c113d0cb8398165ea8a6ae3d4620e7a7b46b66bdbcea802369eb46c5b5c1",
+    "pwa.js": "16093f677addd6aee53920773ed7c9c4e625f3963843b505b5e91157faffb9b9",
     "ranking.js": "46f287f57a6f0adfa7f6fb9f28d80f76a21c086efa0ce085afbcac315292be82",
     "style.css": "627383dd293e10fd131211383224ec01c55c8719773fdd0b764ba43d753699ab",
-    "sw.js": "089f0a181053f8e4209af1d6faad1c018379d4c725ac280229cdb9d98c4785c8",
+    "sw.js": "b2288a804996d1b6c9d8e868cae2872117ec55e54856ae66170912fabf7793d0",
     "visit.js": "f23f39a689b3b425051c548df0a6e173460ccf45c846f997bb2dc8188536dc0d"
   }
 }
