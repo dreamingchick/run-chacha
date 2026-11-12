@@ -25,6 +25,49 @@ for(const width of [640,1000])for(const multiplier of [1,2,5,10])
 assert(singleApex+9<176-6);console.log('PASS: both giant vegetables require and allow double jump at 1/2/5/10x');
 for(const bottom of [78,112,150,188]){const o=a.makeObstacle('crow',300,{bottom});assert(o.bottom===bottom&&o.w>70);assert(o.bottom+o.h<=236)}
 const crowGround=setup();crowGround.app.obstacles=[crowGround.makeObstacle('crow',crowGround.actorBox().right+10,{bottom:150})];step(crowGround,1.2);assert.equal(crowGround.app.mode,'play');const crowJump=encounter('crow',1,false);assert.equal(crowJump.app.mode,'over');
+// Exercise the production pairing roll directly, including its exact boundary.
+function openingPattern(x,kind,pairRoll,{countRoll=.3,atX=2000}={}){
+ const vegetableRoll={radish:.4,cabbage:.8,chestnut:.1}[kind];
+ const rolls=[.5,vegetableRoll,countRoll,pairRoll];
+ x.setRandom(()=>rolls.shift()??.5);
+ return x.makeEncounter(atX,x.app.speed,0);
+}
+for(const kind of ['radish','cabbage']){
+ assert.equal(openingPattern(a,kind,.1).length,1);
+ assert.equal(openingPattern(a,kind,.0999).length,2);
+ assert(openingPattern(a,kind,0,{countRoll:.9}).every(o=>o.name!=='crow'));
+}
+assert.equal(openingPattern(a,'chestnut',0).length,1);
+for(const width of [640,1000])for(const multi of [1,2,5,10]){
+ const groundCrow=setup(multi);
+ groundCrow.setWorld(width,480);
+ groundCrow.setRandom(()=>0);
+ const crow=groundCrow.makeObstacle('crow',groundCrow.actorBox().right+groundCrow.app.speed*.16-7);
+ assert.equal(crow.bottom,0);
+ assert.equal(crow.phase,0);
+ assert.match(crow.label,/앉은 까마귀/);
+ groundCrow.app.obstacles=[crow];
+ groundCrow.jump();step(groundCrow,1.2);
+ assert.equal(groundCrow.app.cleared,1,'single jump clears seated crow');
+
+ for(const kind of ['radish','cabbage']){
+  const pair=setup(multi);
+  pair.setWorld(width,480);
+  const atX=pair.actorBox().right+pair.app.speed*.42-5;
+  const [vegetable,airCrow]=openingPattern(pair,kind,0,{atX});
+  assert.equal(airCrow.name,'crow');
+  assert(airCrow.bottom>vegetable.h);
+  assert.equal(airCrow.x+airCrow.w/2,vegetable.x+vegetable.w/2);
+  pair.app.obstacles=[vegetable,airCrow];
+  pair.jump();step(pair,.3);pair.jump();step(pair,1.2);
+  assert.equal(pair.app.cleared,2,'double jump clears '+kind+' and crow at '+multi+'x / '+width);
+ }
+}
+const groundedHit=setup();
+groundedHit.app.obstacles=[groundedHit.makeObstacle('crow',groundedHit.actorBox().right+10,{bottom:0})];
+step(groundedHit,.5);
+assert.equal(groundedHit.app.mode,'over','a seated crow collides at ground level');
+console.log('PASS: 10% pairing boundary, centered airborne crow, double jump clears pairs, seated crow collides and allows a single jump');
 const swept=setup();assert(swept.sweptCollision({left:0,right:20,top:0,bottom:20},{left:0,right:20,top:0,bottom:20},{left:200,right:220,top:0,bottom:20},{left:-200,right:-180,top:0,bottom:20}));
 const paused=setup();paused.pause();paused.jump();assert.equal(paused.app.jumpsUsed,0);const distance=paused.app.distance;step(paused,1);assert.equal(paused.app.distance,distance);paused.pause();paused.app.mode='over';paused.jump();assert.equal(paused.app.jumpsUsed,0);console.log('PASS: four crow lanes, ground/jump avoidance, swept collision, pause guards');
 // Real generated encounters preserve large/crow isolation and safe small chains.
@@ -34,7 +77,11 @@ for(let i=0;i<3000;i++){
  if(pattern[0].giant&&!pattern[0].tight){giants++;assert.equal(pattern.length,1)}
  if(pattern[0].name==='crow'){crows++;assert.equal(pattern.length,1)}
  for(const o of pattern)if(o.name==='chestnut'){chestnuts++;assert(!o.giant&&o.h<=46&&o.bottom===0)}
- if(pattern.length>1)assert(pattern.every(o=>!o.giant&&o.bottom===0&&['radish','cabbage','chestnut'].includes(o.name)));
+ if(pattern[0].pairedVegetable){
+  assert.equal(pattern.length,2);
+  assert.equal(pattern[1].name,'crow');
+  assert(['radish','cabbage'].includes(pattern[0].name));
+ }else if(pattern.length>1)assert(pattern.every(o=>!o.giant&&o.bottom===0&&['radish','cabbage','chestnut'].includes(o.name)));
 }
 assert.deepEqual([...counts].sort(),[1,2,3]);assert(giants>0&&crows>0&&chestnuts>0);
 for(const width of [640,1000])for(const multi of [1,2,5,10])for(const count of [2,3]){
@@ -54,10 +101,10 @@ for(const multi of [1,10]){
  const x=setup(multi);x.gameConfig.invincible=true;x.app.spawn=0;
  for(let i=0;i<120*90;i++){
   x.update(DT);assert(x.app.obstacles.length<=3);
-  if(x.app.obstacles.some(o=>(o.giant&&!o.tight)||o.name==='crow'))assert.equal(x.app.obstacles.length,1,'large/crow encounter stays isolated');
+  if(x.app.obstacles.some(o=>o.giant||(o.name==='crow'&&!o.pairedVegetable)))assert.equal(x.app.obstacles.length,1,'giants and standalone crows stay isolated');
  }
 }
-console.log('PASS: small pairs/triples clearable at 1/2/5/10x and mobile/desktop; giants and crows stay isolated');
+console.log('PASS: small pairs/triples clearable at 1/2/5/10x and mobile/desktop; giants and standalone crows stay isolated');
 for(const hz of [30,60,120,144]){const x=setup();x.app.spawn=1e9;x.frame(100);for(let i=1;i<=hz*2;i++)x.frame(100+i*1000/hz);assert(x.app.distance>70&&x.app.distance<100);x.render()}
 const cap=setup();cap.app.distance=1e9;cap.update(DT);assert.equal(cap.app.speed,cap.MAX_SPEED);cap.update(DT);assert.equal(cap.app.speed,cap.MAX_SPEED);console.log('PASS: fixed timestep and 10x speed cap');
 const source=fs.readFileSync('dist/chacha.js','utf8'),html=fs.readFileSync('dist/index.html','utf8');assert(source.includes("dispatchEvent(new Event('chacha:run-start'))"));assert(source.includes("dispatchEvent(new CustomEvent('chacha:run-end'"));assert(!html.includes('testStart'));assert(html.includes('id="rankV1"')&&html.includes('id="rankV2"'));
@@ -99,7 +146,7 @@ console.log('PASS: 20% ordinary-height tight clusters; pairs allow precise singl
 const v4=setup();assert.equal(v4.app.best,0,'v4 starts with isolated local best');
 assert.deepEqual([0,499,500,1499,1500].map(v4.stageFor),[0,0,1,1,2]);
 let openingChestnuts=0,state=945;v4.setRandom(()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296});
-for(let i=0;i<1000;i++){const p=v4.makeEncounter(2000,v4.START_SPEED,0);assert(p.length<=2);assert(p.every(o=>!o.giant&&!o.tight&&o.name!=='crow'));openingChestnuts+=p.filter(o=>o.name==='chestnut').length}
+for(let i=0;i<1000;i++){const p=v4.makeEncounter(2000,v4.START_SPEED,0);assert(p.length<=2);assert(p.every(o=>!o.giant&&!o.tight&&(o.name!=='crow'||o.pairedVegetable)));openingChestnuts+=p.filter(o=>o.name==='chestnut').length}
 assert(openingChestnuts>0,'chestnuts appear during the opening');
 v4.gameConfig.invincible=true;v4.app.spawn=1e9;v4.app.obstacles=[v4.makeObstacle('radish',-100)];v4.update(DT);assert.equal(v4.app.cleared,1);v4.update(DT);assert.equal(v4.app.cleared,1,'count clearance only once');
 v4.app.obstacles=[{...v4.makeObstacle('radish',-100),hit:true}];v4.update(DT);assert.equal(v4.app.cleared,1,'hit objects do not count as cleared');

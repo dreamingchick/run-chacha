@@ -6,7 +6,8 @@ const $=id=>document.getElementById(id), canvas=$('game');
 let ctx=canvas.getContext('2d');
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t;
 const START_SPEED=311.04*1.5,MAX_SPEED=START_SPEED*10,GRAVITY=2340,JUMP_SPEED=750,SECOND_JUMP_SPEED=820;
-const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.24;
+const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.10;
+const CROW_LANES=[0,78,112,150,188],PAIRED_CROW_HEIGHT=112;
 const BEST_KEY='chacha_v4_high_score';
 const gameConfig={invincible:false};
 
@@ -141,7 +142,10 @@ function makeObstacle(kind='random',atX,options={}){
   else if(Math.random()<GIANT_CHANCE)kind=Math.random()<.5?'giant-radish':'giant-cabbage';
   else kind=smallObstacleKind();
  }
- if(kind==='crow'){const bottom=options.bottom??[78,112,150,188][Math.floor(Math.random()*4)];return {name:'crow',kind,w:82,h:48,bottom,x:atX,phase:Math.random()*TAU,label:`까마귀 ${bottom<120?'낮게':'높게'}`,giant:false};}
+ if(kind==='crow'){
+  const bottom=options.bottom??CROW_LANES[Math.floor(Math.random()*CROW_LANES.length)],seated=bottom===0;
+  return {name:'crow',kind,w:seated?60:82,h:seated?34:48,bottom,x:atX,phase:seated?0:Math.random()*TAU,label:seated?'앉은 까마귀 · 점프':`까마귀 ${bottom<120?'낮게':'높게'} · 지상으로 통과`,giant:false};
+ }
  if(kind==='chestnut')return {name:'chestnut',kind,w:40,h:38,bottom:0,x:atX,phase:0,label:'밤송이',giant:false};
  const giant=kind.startsWith('giant-'),name=kind.replace('giant-','');
  return {name,kind,giant,w:giant?(name==='radish'?88:154):(name==='radish'?38:44),h:giant?176:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
@@ -186,6 +190,12 @@ function makeEncounter(atX,speed,distance=2000){
  const first=makeObstacle(stage===0?smallObstacleKind():'random',atX),pattern=[first];
  if(first.giant||first.name==='crow')return pattern;
  const roll=Math.random(),count=stage===0?(roll<.7?1:2):roll<.1?1:roll<.55?2:3;
+ if(count===1&&(first.name==='radish'||first.name==='cabbage')&&Math.random()<CROW_PAIR_CHANCE){
+  const crow=makeObstacle('crow',atX,{bottom:PAIRED_CROW_HEIGHT});
+  crow.x=first.x+(first.w-crow.w)/2;
+  first.pairedVegetable=crow.pairedVegetable=first.label;
+  pattern.push(crow);
+ }
  for(let i=1;i<count;i++){
   const next=makeObstacle(smallObstacleKind(),0),previous=pattern[i-1];
   next.x=previous.x+smallSpacing(previous,next,speed);pattern.push(next);
@@ -223,7 +233,7 @@ function update(dt){
   app.runTicks++;app.distance+=app.speed*t*.08;
   app.speed=Math.min(MAX_SPEED,Math.max(START_SPEED,START_SPEED+app.distance*.0525));
   app.spawn-=t;
-  // One encounter at a time; only small ground vegetables form sequences.
+  // Finish the current encounter and its recovery before spawning another.
   if(app.spawn<=0&&app.obstacles.length===0){
    app.obstacles.push(...makeEncounter(W+app.speed*1.15,app.speed,app.distance));app.spawn=0;
   }
@@ -249,13 +259,29 @@ function update(dt){
  if(previewing)$('phase').value=app.phase;
  const next=app.obstacles.find(o=>!o.hit&&o.x+o.w>actorX()-23);
  const nextObject=$('nextObject');
- const label=next?next.label+(next.giant?' · 이중 점프':next.name==='crow'?' · 지상으로 통과':''):'다음 장애물 대기 중';
+ const label=!next?'다음 장애물 대기 중':next.pairedVegetable
+  ?next.pairedVegetable+' 위 까마귀 · 이중 점프'
+  :next.label+(next.giant?' · 이중 점프':'');
  if(nextObject.textContent!==label){
   nextObject.textContent=label;
   nextObject.classList.toggle('giant-warning',Boolean(next?.giant));
  }
 }
+function drawSeatedCrow(o){
+ ctx.save();ctx.translate(o.x+o.w/2,ground);ctx.scale(-1,1);
+ ctx.fillStyle='#11141f';ctx.beginPath();ctx.moveTo(-9,-18);ctx.lineTo(-28,-11);ctx.lineTo(-24,-6);ctx.lineTo(-5,-9);ctx.closePath();ctx.fill();
+ ellipse(0,-13,21,10,'#202434',-.12);
+ ellipse(0,-15,15,6,'#30344c',-.18);
+ ellipse(13,-24,9,9,'#171c28');
+ ctx.fillStyle='#adb4b5';ctx.beginPath();ctx.moveTo(19,-26);ctx.lineTo(27,-22);ctx.lineTo(19,-20);ctx.closePath();ctx.fill();
+ line([[1,-7],[3,-2],[8,-2]],'#28282d',2);
+ line([[10,-7],[12,-2],[17,-2]],'#28282d',2);
+ ellipse(16,-26,1.5,1.5,'#edc47c');
+ ctx.restore();
+}
 function drawCrow(o){
+ if(o.bottom===0){drawSeatedCrow(o);return}
+
  const cx=o.x+o.w/2,cy=ground-o.bottom-o.h/2,flap=Math.sin(app.time*15+o.phase);
  ctx.save();ctx.translate(cx,cy);ctx.scale(-1,1);
  // Raven silhouette: pointed beak, fan tail, animated wings and violet feather highlights.
@@ -269,7 +295,7 @@ function drawCrow(o){
 function drawChestnut(o){const x=o.x+o.w/2,y=ground-12;ctx.save();ctx.translate(x,y);ctx.fillStyle='#71351f';ctx.beginPath();ctx.arc(0,4,17,Math.PI,0);ctx.lineTo(17,6);ctx.lineTo(-17,6);ctx.closePath();ctx.fill();ctx.strokeStyle='#f4d486';ctx.lineWidth=2.2;for(let i=0;i<9;i++){const a=Math.PI+i*Math.PI/8;ctx.beginPath();ctx.moveTo(Math.cos(a)*8,3+Math.sin(a)*8);ctx.lineTo(Math.cos(a)*23,3+Math.sin(a)*23);ctx.stroke()}ctx.fillStyle='#2b2219';ctx.beginPath();ctx.arc(0,4,2,0,TAU);ctx.fill();ctx.restore()}
 function recoveryTime(o){
  // Worst double-jump flight: second impulse just before first landing.
- const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight?2*SECOND_JUMP_SPEED/GRAVITY:0);
+ const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight||o.pairedVegetable?2*SECOND_JUMP_SPEED/GRAVITY:0);
  return flight+.32+o.w/START_SPEED;
 }
 function paintCountryside(scene=0){
@@ -351,7 +377,7 @@ function render(){
   if(o.x>W+190)continue;
   if(o.name==='crow'||o.name==='chestnut'){
    ctx.save();
-   shadow(o.x+o.w/2,ground,o.w*.5,0);
+   if(!o.pairedVegetable)shadow(o.x+o.w/2,ground,o.w*.5,0);
    if(o.name==='crow')drawCrow(o);else drawChestnut(o);
    ctx.restore();
   }else{
