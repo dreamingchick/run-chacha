@@ -3,8 +3,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const DT=1/120;
 function sandbox(){
  const nodes={},storage={},gradient={addColorStop(){}};
- const drawingStats={blurs:0,shadows:0,images:0};
- const drawing=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>k==='drawImage'?(()=>drawingStats.images++):o[k]||(()=>{}),set:(o,k,v)=>{if(k==='filter'&&v.includes('blur'))drawingStats.blurs++;if(k==='shadowBlur'&&v>0)drawingStats.shadows++;o[k]=v;return true}});
+ const drawingStats={blurs:0,shadows:0,images:0,nutPops:0};
+ const drawing=new Proxy({createRadialGradient:()=>gradient,createLinearGradient:()=>gradient},{get:(o,k)=>k==='drawImage'?(()=>drawingStats.images++):k==='fillText'?(label=>{if(label==='빠밤!')drawingStats.nutPops++}):o[k]||(()=>{}),set:(o,k,v)=>{if(k==='filter'&&v.includes('blur'))drawingStats.blurs++;if(k==='shadowBlur'&&v>0)drawingStats.shadows++;o[k]=v;return true}});
  function element(id){return nodes[id]??={id,value:0,hidden:false,disabled:false,textContent:'',classList:{toggle(){}},innerHTML:'',setAttribute(){},addEventListener(){},getBoundingClientRect:()=>({width:1000,height:392}),getContext:()=>drawing,scrollIntoView(){},focus(){}}}
  const box={drawingStats,document:{getElementById:element,createElement:()=>element('temp'),addEventListener(){}},window:{addEventListener(){},dispatchEvent(){}},Event:class{},CustomEvent:class{},devicePixelRatio:1,ResizeObserver:class{observe(){}},Image:class{decode(){return new Promise(()=>{})}},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},requestAnimationFrame(){},Math:Object.create(Math),console};
  box.Math.random=()=>.5;vm.createContext(box);
@@ -68,6 +68,34 @@ groundedHit.app.obstacles=[groundedHit.makeObstacle('crow',groundedHit.actorBox(
 step(groundedHit,.5);
 assert.equal(groundedHit.app.mode,'over','a seated crow collides at ground level');
 console.log('PASS: 10% pairing boundary, centered airborne crow, double jump clears pairs, seated crow collides and allows a single jump');
+for(const width of [640,1000])for(const multi of [1,2,5,10]){
+ const run=setup(multi);
+ run.setWorld(width,480);
+ const rolls=[.8,.8,.30];
+ run.setRandom(()=>rolls.shift()??.5);
+ const pattern=run.makeEncounter(run.actorBox().right+run.app.speed*.20-5,run.app.speed,500);
+ assert.equal(pattern.length,1);
+ const [nut]=pattern;
+ assert.equal(nut.name,'medium-nut');
+ assert(nut.w>44&&nut.w<88&&nut.h>46&&nut.h<176&&nut.bottom===0);
+ run.app.obstacles=pattern;
+ run.jump();step(run,1.2);
+ assert.equal(run.app.cleared,1,'single jump clears medium nut at '+multi+'x / '+width);
+}
+const pop=setup();
+pop.setWorld(1000,480);
+const nut=pop.makeObstacle('medium-nut',1010);
+pop.app.obstacles=[nut];
+pop.update(DT);pop.render();
+assert.equal(nut.enteredAt,undefined,'wait until the nut enters the screen');
+step(pop,.1);pop.render();
+const enteredAt=nut.enteredAt;
+assert(Number.isFinite(enteredAt));
+assert.equal(pop.drawingStats.nutPops,1);
+step(pop,.7);pop.render();
+assert.equal(pop.drawingStats.nutPops,1,'entrance text expires');
+assert.equal(nut.enteredAt,enteredAt,'entrance does not restart');
+console.log('PASS: medium nut spawns alone, clears with one jump, and plays one timed on-screen entrance');
 const swept=setup();assert(swept.sweptCollision({left:0,right:20,top:0,bottom:20},{left:0,right:20,top:0,bottom:20},{left:200,right:220,top:0,bottom:20},{left:-200,right:-180,top:0,bottom:20}));
 const paused=setup();paused.pause();paused.jump();assert.equal(paused.app.jumpsUsed,0);const distance=paused.app.distance;step(paused,1);assert.equal(paused.app.distance,distance);paused.pause();paused.app.mode='over';paused.jump();assert.equal(paused.app.jumpsUsed,0);console.log('PASS: four crow lanes, ground/jump avoidance, swept collision, pause guards');
 // Real generated encounters preserve large/crow isolation and safe small chains.
@@ -101,7 +129,7 @@ for(const multi of [1,10]){
  const x=setup(multi);x.gameConfig.invincible=true;x.app.spawn=0;
  for(let i=0;i<120*90;i++){
   x.update(DT);assert(x.app.obstacles.length<=3);
-  if(x.app.obstacles.some(o=>o.giant||(o.name==='crow'&&!o.pairedVegetable)))assert.equal(x.app.obstacles.length,1,'giants and standalone crows stay isolated');
+  if(x.app.obstacles.some(o=>o.giant||o.name==='medium-nut'||(o.name==='crow'&&!o.pairedVegetable)))assert.equal(x.app.obstacles.length,1,'giants and standalone crows stay isolated');
  }
 }
 console.log('PASS: small pairs/triples clearable at 1/2/5/10x and mobile/desktop; giants and standalone crows stay isolated');

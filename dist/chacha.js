@@ -6,7 +6,8 @@ const $=id=>document.getElementById(id), canvas=$('game');
 let ctx=canvas.getContext('2d');
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t;
 const START_SPEED=311.04*1.5,MAX_SPEED=START_SPEED*10,GRAVITY=2340,JUMP_SPEED=750,SECOND_JUMP_SPEED=820;
-const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.10;
+const GIANT_CHANCE=.25,CROW_CHANCE=.20,CHESTNUT_CHANCE=.22,CROW_PAIR_CHANCE=.10,MEDIUM_NUT_CHANCE=.12;
+const NUT_POP_TIME=.65;
 const CROW_LANES=[0,78,112,150,188],PAIRED_CROW_HEIGHT=112;
 const BEST_KEY='chacha_v4_high_score';
 const gameConfig={invincible:false};
@@ -98,7 +99,16 @@ function drawDog(x,y,scale,phase,jump=0,vy=0,land=0){
 
 function shadow(x,y,size,jump){ellipse(x,y+3,size*(1-clamp(jump/300,0,.5)),size*.10,'#080d0870')}
 function addDust(x,y,n=2){for(let i=0;i<n;i++)app.dust.push({x,y,vx:-25-Math.random()*35,vy:-15-Math.random()*25,life:.45,size:2+Math.random()*3})}
-function beep(freq,duration,type='sine'){if(!app.sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.6,audio.currentTime+duration);g.gain.setValueAtTime(.06,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch{}}
+function beep(freq,duration,type='sine',delay=0){
+ if(!app.sound)return;
+ try{
+  audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();
+  const o=audio.createOscillator(),g=audio.createGain(),start=audio.currentTime+delay,end=start+duration;
+  o.type=type;o.frequency.setValueAtTime(freq,start);o.frequency.exponentialRampToValueAtTime(freq*.6,end);
+  g.gain.setValueAtTime(.06,start);g.gain.exponentialRampToValueAtTime(.001,end);
+  o.connect(g);g.connect(audio.destination);o.start(start);o.stop(end);
+ }catch{}
+}
 function actorX(){return app.mode==='preview'?W*.48:Math.min(100,W*.16)}
 function start(){app.runTicks=0;window.dispatchEvent(new Event('chacha:run-start'));resetRun();$('result').hidden=true;$('start').hidden=true;$('pause').hidden=false;$('pause').textContent='잠깐 쉬기 Ⅱ';$('hint').hidden=true;$('modeLabel').textContent='차차, 달리는 중!';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=true;app.frozen=false;$('freeze').setAttribute('aria-pressed','false');$('freeze').textContent='동작 멈추기';$('instructions').innerHTML='<kbd>SPACE</kbd> 두 번 눌러 이중 점프 · <kbd>P</kbd> 일시정지';beep(660,.1)}
 function preview(){app.mode='preview';app.obstacles=[];app.jumpY=0;app.vy=0;app.land=0;app.jumpsUsed=0;app.secondFlash=0;updateJumpLabel();$('result').hidden=true;$('start').hidden=false;$('pause').hidden=true;$('hint').hidden=false;$('modeLabel').textContent='차차의 러닝 타임';$('distance').textContent='READY TO RUN';$('pace').textContent='01 / WARM UP';for(const id of ['speed','slow','freeze','phase'])$(id).disabled=false;$('instructions').innerHTML='<kbd>SPACE</kbd> / <kbd>↑</kbd> / 화면 두 번 터치로 이중 점프'}
@@ -139,13 +149,18 @@ function smallObstacleKind(){
 function makeObstacle(kind='random',atX,options={}){
  if(kind==='random'){
   if(options.crow===true||(options.crow!==false&&Math.random()<CROW_CHANCE))kind='crow';
-  else if(Math.random()<GIANT_CHANCE)kind=Math.random()<.5?'giant-radish':'giant-cabbage';
-  else kind=smallObstacleKind();
+  else{
+   const sizeRoll=Math.random();
+   if(sizeRoll<GIANT_CHANCE)kind=Math.random()<.5?'giant-radish':'giant-cabbage';
+   else if(sizeRoll<GIANT_CHANCE+MEDIUM_NUT_CHANCE)kind='medium-nut';
+   else kind=smallObstacleKind();
+  }
  }
  if(kind==='crow'){
   const bottom=options.bottom??CROW_LANES[Math.floor(Math.random()*CROW_LANES.length)],seated=bottom===0;
   return {name:'crow',kind,w:seated?60:82,h:seated?34:48,bottom,x:atX,phase:seated?0:Math.random()*TAU,label:seated?'앉은 까마귀 · 점프':`까마귀 ${bottom<120?'낮게':'높게'} · 지상으로 통과`,giant:false};
  }
+ if(kind==='medium-nut')return {name:kind,kind,w:70,h:86,bottom:0,x:atX,label:'중형 알밤 · 점프',giant:false};
  if(kind==='chestnut')return {name:'chestnut',kind,w:40,h:38,bottom:0,x:atX,phase:0,label:'밤송이',giant:false};
  const giant=kind.startsWith('giant-'),name=kind.replace('giant-','');
  return {name,kind,giant,w:giant?(name==='radish'?88:154):(name==='radish'?38:44),h:giant?176:(name==='radish'?46:42),bottom:0,x:atX,label:(giant?'대형 ':'')+(name==='radish'?'무':'배추')};
@@ -188,7 +203,7 @@ function makeEncounter(atX,speed,distance=2000){
   return cluster;
  }
  const first=makeObstacle(stage===0?smallObstacleKind():'random',atX),pattern=[first];
- if(first.giant||first.name==='crow')return pattern;
+ if(first.giant||first.name==='crow'||first.name==='medium-nut')return pattern;
  const roll=Math.random(),count=stage===0?(roll<.7?1:2):roll<.1?1:roll<.55?2:3;
  if(count===1&&(first.name==='radish'||first.name==='cabbage')&&Math.random()<CROW_PAIR_CHANCE){
   const crow=makeObstacle('crow',atX,{bottom:PAIRED_CROW_HEIGHT});
@@ -240,6 +255,10 @@ function update(dt){
   const newActor=actorBox();
   for(const o of app.obstacles){
    const before=obstacleBox(o);o.x-=app.speed*t;const after=obstacleBox(o);
+   if(o.name==='medium-nut'&&o.x<W&&o.enteredAt===undefined){
+    o.enteredAt=app.time;
+    beep(523,.13,'triangle');beep(784,.22,'triangle',.10);
+   }
    if(sweptCollision(oldActor,newActor,before,after)&&!o.hit){
     o.hit=true;app.hits++;
     if(!gameConfig.invincible){gameOver();break}
@@ -292,7 +311,53 @@ function drawCrow(o){
  ctx.strokeStyle='#606385';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-7,-8);ctx.lineTo(-24,-23-flap*18);ctx.stroke();
  ellipse(21,-10,2,2,'#edc47c');ctx.restore();
 }
-function drawChestnut(o){const x=o.x+o.w/2,y=ground-12;ctx.save();ctx.translate(x,y);ctx.fillStyle='#71351f';ctx.beginPath();ctx.arc(0,4,17,Math.PI,0);ctx.lineTo(17,6);ctx.lineTo(-17,6);ctx.closePath();ctx.fill();ctx.strokeStyle='#f4d486';ctx.lineWidth=2.2;for(let i=0;i<9;i++){const a=Math.PI+i*Math.PI/8;ctx.beginPath();ctx.moveTo(Math.cos(a)*8,3+Math.sin(a)*8);ctx.lineTo(Math.cos(a)*23,3+Math.sin(a)*23);ctx.stroke()}ctx.fillStyle='#2b2219';ctx.beginPath();ctx.arc(0,4,2,0,TAU);ctx.fill();ctx.restore()}
+function drawChestnut(o){
+ ctx.save();ctx.translate(o.x+o.w/2,ground-o.h/2);
+ ctx.beginPath();
+ const spikes=22;
+ for(let i=0;i<spikes*2;i++){
+  const angle=i*Math.PI/spikes;
+  const radius=i%2===0?1:.67;
+  const x=Math.cos(angle)*radius*19,y=Math.sin(angle)*radius*18;
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+ }
+ ctx.closePath();ctx.lineJoin='round';ctx.lineWidth=1.6;
+ ctx.fillStyle='#be873b';ctx.fill();ctx.strokeStyle='#51301b';ctx.stroke();
+ ellipse(0,0,12,11,'#9a602c');
+ ellipse(-3,-3,7,5,'#d39b4d',-.32);
+ for(let i=0;i<6;i++){
+  const angle=i*TAU/6;
+  line([[Math.cos(angle)*6,Math.sin(angle)*5],[Math.cos(angle+.16)*11,Math.sin(angle+.16)*10]],'#693d20',1);
+ }
+ ctx.restore();
+}
+function drawMediumNut(o){
+ ctx.save();ctx.translate(o.x+o.w/2,ground);
+ const shell=ctx.createLinearGradient(-25,-72,24,-9);
+ shell.addColorStop(0,'#e09a57');shell.addColorStop(.48,'#a4532c');shell.addColorStop(1,'#622c1c');
+ ctx.beginPath();ctx.moveTo(2,-83);
+ ctx.bezierCurveTo(8,-72,32,-66,34,-38);
+ ctx.bezierCurveTo(38,-12,23,-3,0,-3);
+ ctx.bezierCurveTo(-24,-3,-36,-12,-34,-36);
+ ctx.bezierCurveTo(-32,-62,-7,-73,2,-83);
+ ctx.closePath();ctx.fillStyle=shell;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#492819';ctx.stroke();
+ ctx.beginPath();ctx.moveTo(-30,-20);ctx.quadraticCurveTo(0,-37,30,-20);
+ ctx.quadraticCurveTo(26,-4,0,-4);ctx.quadraticCurveTo(-26,-4,-30,-20);
+ ctx.fillStyle='#e9bd7c';ctx.fill();
+ line([[-16,-18],[-6,-15],[5,-15],[15,-18]],'#b68149',2);
+ ellipse(-14,-51,5,15,'#f2bd7a',.47);
+ ctx.restore();
+}
+function drawNutPop(o){
+ const progress=(app.time-o.enteredAt)/NUT_POP_TIME;
+ if(!Number.isFinite(progress)||progress>=1)return;
+ const x=clamp(o.x+o.w/2,65,W-65),y=ground-o.h-22-progress*21;
+ ctx.save();ctx.globalAlpha=1-clamp((progress-.58)/.42,0,1);
+ ctx.font='900 34px sans-serif';ctx.textAlign='center';ctx.lineJoin='round';
+ ctx.strokeStyle='#6a2d1b';ctx.lineWidth=6;ctx.fillStyle='#ffdf69';
+ ctx.strokeText('빠밤!',x,y);ctx.fillText('빠밤!',x,y);
+ ctx.restore();
+}
 function recoveryTime(o){
  // Worst double-jump flight: second impulse just before first landing.
  const flight=2*JUMP_SPEED/GRAVITY+(o.giant||o.tight||o.pairedVegetable?2*SECOND_JUMP_SPEED/GRAVITY:0);
@@ -375,10 +440,12 @@ function render(){
  const previewing=app.mode==='preview',scale=previewing?1.65:.92,x=actorX();shadow(x,ground,previewing?65:36,app.jumpY);
  for(const o of app.obstacles){
   if(o.x>W+190)continue;
-  if(o.name==='crow'||o.name==='chestnut'){
+  if(o.name==='crow'||o.name==='chestnut'||o.name==='medium-nut'){
    ctx.save();
    if(!o.pairedVegetable)shadow(o.x+o.w/2,ground,o.w*.5,0);
-   if(o.name==='crow')drawCrow(o);else drawChestnut(o);
+   if(o.name==='crow')drawCrow(o);
+   else if(o.name==='medium-nut'){drawMediumNut(o);drawNutPop(o)}
+   else drawChestnut(o);
    ctx.restore();
   }else{
    drawObstacle(o);
