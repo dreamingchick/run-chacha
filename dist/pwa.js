@@ -9,7 +9,24 @@
     message.hidden = false;
     messageTimer = setTimeout(() => { message.hidden = true; }, 6000);
   }
-  button.addEventListener('click', () => window.open('https://garu-arcade-hub.snugbrink3.chatgpt.site/#install-guide', '_blank', 'noopener,noreferrer'));
+  function cameFromArcade() {
+    let entered = new URLSearchParams(location.search).get('from') === 'garu-arcade';
+    try { entered = entered || (document.referrer && new URL(document.referrer).origin === 'https://garu-arcade-hub.snugbrink3.chatgpt.site'); } catch {}
+    try {
+      if (entered) sessionStorage.setItem('garu-arcade-entry', '1');
+      return Boolean(entered || sessionStorage.getItem('garu-arcade-entry') === '1');
+    } catch { return Boolean(entered); }
+  }
+  const fromArcade = cameFromArcade();
+  if (fromArcade) {
+    button.innerHTML = '<span>대문</span><span>홈</span>';
+    button.setAttribute('aria-label', '가루 오락실 대문 홈으로 돌아가기');
+    button.title = '대문 홈으로';
+  }
+  button.addEventListener('click', () => {
+    if (fromArcade) window.location.assign('https://garu-arcade-hub.snugbrink3.chatgpt.site/');
+    else window.open('https://garu-arcade-hub.snugbrink3.chatgpt.site/#install-guide', '_blank', 'noopener,noreferrer');
+  });
   // Real same-origin service worker, scoped to the deployment subdirectory.
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     window.addEventListener('load', () => {
