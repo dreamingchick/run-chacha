@@ -30,6 +30,15 @@ jobs:
         run: node release-check.cjs
       - name: Check online ranking behavior
         run: node ranking-check.cjs
+      - name: Build independent leaderboard edition
+        run: python3 scripts/build-alternate.py
+      - name: Check independent edition isolation
+        run: |
+          test -f dist/alternate/index.html
+          grep -q 'ranking-alternate' dist/alternate/ranking.js
+          grep -q 'chacha_alternate_high_score' dist/alternate/chacha.js
+          grep -q 'chacha-alternate-release' dist/alternate/sw.js
+          ! grep -q 'functions/v1/ranking\x27' dist/alternate/ranking.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game
