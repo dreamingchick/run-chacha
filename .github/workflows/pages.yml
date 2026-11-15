@@ -38,6 +38,11 @@ jobs:
           grep -q 'ranking-alternate' dist/alternate/ranking.js
           grep -q 'chacha_alternate_high_score' dist/alternate/chacha.js
           grep -q 'chacha-alternate-release' dist/alternate/sw.js
+          grep -q 'rel="manifest"' dist/alternate/index.html
+          grep -q 'beforeinstallprompt' dist/alternate/pwa.js
+          ! grep -q 'garu-arcade-hub' dist/alternate/pwa.js
+          ! grep -q 'data-garu-game' dist/alternate/index.html
+          python3 -m py_compile scripts/build-alternate.py
           ! grep -q "functions/v1/ranking'" dist/alternate/ranking.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
