@@ -21,8 +21,13 @@ def replace_file(name, pairs):
     path.write_text(data, encoding='utf-8')
 
 replace_file('chacha.js', [
-    ("const BEST_KEY='chacha_v4_high_score';", "const BEST_KEY='chacha_alternate_high_score';")
+    ("const BEST_KEY='chacha_v4_high_score';", "const BEST_KEY='chacha_alternate_high_score';"),
+    ("$('start').onclick=start;$('retry').onclick=start;", "$('start').onclick=()=>window.chachaQuizGate.request(start);$('retry').onclick=()=>window.chachaQuizGate.request(start);")
 ])
+# Copy the self-contained 100-question bank and the answer gate into the independent edition.
+shutil.copy2(ROOT / 'quiz' / 'quiz-bank.js', dst / 'quiz-bank.js')
+shutil.copy2(ROOT / 'quiz' / 'quiz-gate.js', dst / 'quiz-gate.js')
+
 replace_file('ranking.js', [
     ("/functions/v1/ranking'", "/functions/v1/ranking-alternate'"),
     ('const currentVersion=4;', 'const currentVersion=5;'),
@@ -49,7 +54,35 @@ html = html.replace('가루 오락실 앱 설치', '달려라 챠챠 독립판 �
 html = html.replace('title="가루 오락실 앱 설치"', 'title="독립판 설치"')
 html = html.replace('<script defer src="visit.js" data-garu-game="chacha"></script>', '')
 html = html.replace('<link rel="icon" type="image/png"', '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png"')
+html = html.replace('<script src="ranking.js?v=4.0.0"></script>',
+                    '<script src="quiz-bank.js?v=1.0.0"></script><script src="quiz-gate.js?v=1.0.0"></script><script src="ranking.js?v=4.0.0"></script>')
+html = html.replace('<div id="appMessage"', '''<dialog id="quizDialog" class="quiz-dialog" aria-labelledby="quizQuestion" aria-describedby="quizFeedback">
+  <div class="quiz-shell">
+    <p id="quizCategory" class="quiz-category">오늘의 학습 퀴즈</p>
+    <h2 id="quizQuestion">문제를 불러오는 중...</h2>
+    <p class="quiz-instruction">알맞은 답을 고르면 게임이 시작됩니다.</p>
+    <div id="quizChoices" class="quiz-choices"></div>
+    <p id="quizFeedback" role="status" aria-live="polite"></p>
+  </div>
+</dialog><div id="appMessage"''')
 (dst / 'index.html').write_text(html, encoding='utf-8')
+# Add visually distinct, mobile-friendly quiz buttons only to the independent edition.
+with (dst / 'style.css').open('a', encoding='utf-8') as css:
+    css.write("""
+.quiz-dialog{border:1px solid #73885e;border-radius:20px;max-width:min(94vw,540px);width:100%;padding:0;color:#f0f1e7;background:#1a231b;box-shadow:0 20px 80px #000b}
+.quiz-dialog::backdrop{background:#080c08d9}
+.quiz-shell{padding:clamp(18px,4vw,32px)}
+.quiz-category{margin:0;color:#d4ed8a;font-size:14px;font-weight:800}
+.quiz-shell h2{margin:14px 0 8px;font-size:clamp(19px,4.8vw,28px);line-height:1.45;word-break:keep-all}
+.quiz-instruction{color:#c7d0bf;margin:0 0 20px}
+.quiz-choices{display:grid;grid-template-columns:1fr;gap:10px}
+.quiz-choice{width:100%;min-height:54px;padding:13px 16px;text-align:left;font-size:clamp(15px,4vw,19px);font-weight:700;background:#303c2e;border:1px solid #53674d;border-radius:12px;white-space:normal;word-break:keep-all}
+.quiz-choice:hover,.quiz-choice:focus-visible{background:#465e3c}
+.quiz-choice.quiz-wrong{border-color:#d7776b;background:#583530}
+#quizFeedback{margin:16px 0 0;color:#d4ed8a;min-height:1.4em;font-weight:700}
+@media(max-height:540px){.quiz-dialog{max-height:96vh;overflow-y:auto}.quiz-shell{padding:12px}.quiz-choice{min-height:38px;padding:7px 12px}.quiz-shell h2{margin:7px 0}.quiz-instruction{margin-bottom:8px}}
+""")
+
 replace_file('manifest.webmanifest', [
     ('"name": "달려라, 챠챠!"', '"name": "달려라, 챠챠! 독립판"'),
     ('"short_name": "챠챠!"', '"short_name": "챠챠 독립판"')
@@ -125,8 +158,9 @@ standalone_pwa = """'use strict';
 (dst / 'pwa.js').write_text(standalone_pwa, encoding='utf-8')
 
 replace_file('sw.js', [
-    ("chacha-release-4.0.0-arcade-home-1", "chacha-alternate-release-4.0.0-standalone-2"),
-    ("name.startsWith('chacha-release-')", "name.startsWith('chacha-alternate-release-')")
+    ("chacha-release-4.0.0-arcade-home-1", "chacha-alternate-release-4.1.0-quiz-1"),
+    ("name.startsWith('chacha-release-')", "name.startsWith('chacha-alternate-release-')"),
+    ("'./manifest.webmanifest','./assets/chowRun.jpg'", "'./manifest.webmanifest','./quiz-bank.js?v=1.0.0','./quiz-gate.js?v=1.0.0','./assets/chowRun.jpg'")
 ])
 replace_file('notices.js', [
     ("'chacha_patchnote_v400_seen'", "'chacha_alternate_patchnote_v400_seen'"),
@@ -138,4 +172,7 @@ assert "chacha_v4_high_score" not in (dst / 'chacha.js').read_text(encoding='utf
 assert "garu-arcade-hub" not in (dst / 'pwa.js').read_text(encoding='utf-8')
 assert "가루 오락실 앱 설치" not in (dst / 'index.html').read_text(encoding='utf-8')
 assert 'rel="manifest"' in (dst / 'index.html').read_text(encoding='utf-8')
-print('PASS: independent /alternate/ edition created with separate storage, API, PWA cache')
+assert 'chachaQuizGate.request(start)' in (dst / 'chacha.js').read_text(encoding='utf-8')
+assert 'quiz-gate.js?v=1.0.0' in (dst / 'index.html').read_text(encoding='utf-8')
+assert 'quiz-bank.js?v=1.0.0' in (dst / 'sw.js').read_text(encoding='utf-8')
+print('PASS: independent /alternate/ edition with 100-question start/retry gate, PWA and separate ranking')
