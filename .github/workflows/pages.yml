@@ -32,6 +32,8 @@ jobs:
         run: node ranking-check.cjs
       - name: Build independent leaderboard edition
         run: python3 scripts/build-alternate.py
+      - name: Verify elementary quiz on every start and retry
+        run: node quiz/quiz-check.cjs
       - name: Check independent edition isolation
         run: |
           test -f dist/alternate/index.html
