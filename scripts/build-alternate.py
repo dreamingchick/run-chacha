@@ -55,7 +55,7 @@ html = html.replace('title="가루 오락실 앱 설치"', 'title="독립판 설
 html = html.replace('<script defer src="visit.js" data-garu-game="chacha"></script>', '')
 html = html.replace('<link rel="icon" type="image/png"', '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png"')
 html = html.replace('<script src="ranking.js?v=4.0.0"></script>',
-                    '<script src="quiz-bank.js?v=1.0.0"></script><script src="quiz-gate.js?v=1.0.0"></script><script src="ranking.js?v=4.0.0"></script>')
+                    '<script src="quiz-bank.js?v=1.0.0"></script><script src="quiz-gate.js?v=1.1.0"></script><script src="ranking.js?v=4.0.0"></script>')
 html = html.replace('<div id="appMessage"', '''<dialog id="quizDialog" class="quiz-dialog" aria-labelledby="quizQuestion" aria-describedby="quizFeedback">
   <div class="quiz-shell">
     <p id="quizCategory" class="quiz-category">오늘의 학습 퀴즈</p>
@@ -160,9 +160,9 @@ standalone_pwa = """'use strict';
 (dst / 'pwa.js').write_text(standalone_pwa, encoding='utf-8')
 
 replace_file('sw.js', [
-    ("chacha-release-4.0.0-arcade-home-1", "chacha-alternate-release-4.1.0-quiz-1"),
+    ("chacha-release-4.0.0-arcade-home-1", "chacha-alternate-release-4.1.1-quiz-2"),
     ("name.startsWith('chacha-release-')", "name.startsWith('chacha-alternate-release-')"),
-    ("'./manifest.webmanifest','./assets/chowRun.jpg'", "'./manifest.webmanifest','./quiz-bank.js?v=1.0.0','./quiz-gate.js?v=1.0.0','./assets/chowRun.jpg'")
+    ("'./manifest.webmanifest','./assets/chowRun.jpg'", "'./manifest.webmanifest','./quiz-bank.js?v=1.0.0','./quiz-gate.js?v=1.1.0','./assets/chowRun.jpg'")
 ])
 replace_file('notices.js', [
     ("'chacha_patchnote_v400_seen'", "'chacha_alternate_patchnote_v400_seen'"),
@@ -175,6 +175,6 @@ assert "garu-arcade-hub" not in (dst / 'pwa.js').read_text(encoding='utf-8')
 assert "가루 오락실 앱 설치" not in (dst / 'index.html').read_text(encoding='utf-8')
 assert 'rel="manifest"' in (dst / 'index.html').read_text(encoding='utf-8')
 assert 'chachaQuizGate.request(start)' in (dst / 'chacha.js').read_text(encoding='utf-8')
-assert 'quiz-gate.js?v=1.0.0' in (dst / 'index.html').read_text(encoding='utf-8')
+assert 'quiz-gate.js?v=1.1.0' in (dst / 'index.html').read_text(encoding='utf-8')
 assert 'quiz-bank.js?v=1.0.0' in (dst / 'sw.js').read_text(encoding='utf-8')
 print('PASS: independent /alternate/ edition with 100-question start/retry gate, PWA and separate ranking')
