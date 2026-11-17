@@ -66,6 +66,8 @@ html = html.replace('<div id="appMessage"', '''<dialog id="quizDialog" class="qu
   </div>
 </dialog><div id="appMessage"''')
 (dst / 'index.html').write_text(html, encoding='utf-8')
+# /alternate/play.html must enforce the same quiz gate; never expose an ungated entry point.
+(dst / 'play.html').write_text(html, encoding='utf-8')
 # Add visually distinct, mobile-friendly quiz buttons only to the independent edition.
 with (dst / 'style.css').open('a', encoding='utf-8') as css:
     css.write("""
