@@ -17,7 +17,7 @@ function node(id=''){
 }
 const doc={
  getElementById: id=>node(id),
- createElement:()=>({textContent:'',className:'',classList:{add(){}},addEventListener(type,fn){this[type]=fn}})
+ createElement:()=>({textContent:'',className:'',classList:{add(){}},focus(){},addEventListener(type,fn){this[type]=fn}})
 };
 const ctx={window:{},document:doc,Math,console};
 vm.createContext(ctx);
