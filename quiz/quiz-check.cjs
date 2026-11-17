@@ -10,14 +10,14 @@ function node(id=''){
   id, textContent:'', className:'', open:false, children:[], disabled:false,
   classList:{add(label){this.current=label}}, handlers:{},
   addEventListener(type,fn){this.handlers[type]=fn},
-  replaceChildren(){this.children=[]},
+  replaceChildren(){this.children=[];this.firstElementChild=null},
   append(child){this.children.push(child);if(!this.firstElementChild)this.firstElementChild=child},
   focus(){},showModal(){this.open=true},close(){this.open=false}
  };
 }
 const doc={
  getElementById: id=>node(id),
- createElement:()=>({textContent:'',className:'',classList:{add(){}},focus(){},addEventListener(type,fn){this[type]=fn}})
+ createElement:()=>({textContent:'',className:'',disabled:false,classList:{add(){}},focus(){},addEventListener(type,fn){this[type]=fn}})
 };
 const ctx={window:{},document:doc,Math,console};
 vm.createContext(ctx);
@@ -37,26 +37,39 @@ ctx.window.chachaQuizGate.request(()=>started++);
 assert.equal(node('quizDialog').open,true);
 assert.equal(node('quizChoices').children.length,4);
 assert.equal(started,0,'start blocked before answer');
-const choices=node('quizChoices').children;
-const q=bank.find(q=>q.question===node('quizQuestion').textContent);
-const wrong=choices.find(c=>!c.textContent.endsWith(q.options[q.answer]));
-wrong.click();
-assert.equal(started,0,'wrong choice must not start');
-const right=choices.find(c=>c.textContent.endsWith(q.options[q.answer]));
-right.click();
+function currentQuestion(){return bank.find(q=>q.question===node('quizQuestion').textContent)}
+function answerButton(q){return node('quizChoices').children.find(c=>c.textContent.replace(/^\d+\. /,'')===q.options[q.answer])}
+function wrongButtons(q){return node('quizChoices').children.filter(c=>c!==answerButton(q))}
+const q=currentQuestion(), wrong=wrongButtons(q);
+wrong[0].click();
+assert.equal(started,0,'first wrong choice must not start');
+assert.equal(currentQuestion().id,q.id,'first wrong choice keeps question');
+assert.equal(wrong[0].disabled,true,'wrong option is disabled');
+wrong[0].click();
+assert.equal(currentQuestion().id,q.id,'repeated click on disabled option does not count');
+wrong[1].click();
+assert.equal(started,0,'second wrong choice must not start');
+assert.equal(node('quizDialog').open,true);
+const replacement=currentQuestion();
+assert.notEqual(replacement.id,q.id,'second wrong choice replaces question');
+wrong[2].click();
+assert.equal(currentQuestion().id,replacement.id,'stale button cannot affect replacement');
+wrongButtons(replacement)[0].click();
+assert.equal(currentQuestion().id,replacement.id,'wrong count resets on replacement');
+answerButton(replacement).click();
 assert.equal(started,1,'right choice starts');
 assert.equal(node('quizDialog').open,false);
 ctx.window.chachaQuizGate.request(()=>started++);
 assert.equal(started,1,'retry blocked until a second correct answer');
-assert.notEqual(node('quizQuestion').textContent,q.question,'avoid immediate repeat');
-const q2=bank.find(q=>q.question===node('quizQuestion').textContent);
-node('quizChoices').children.find(c=>c.textContent.endsWith(q2.options[q2.answer])).click();
+const q2=currentQuestion();
+assert.notEqual(q2.id,replacement.id,'avoid immediate repeat');
+answerButton(q2).click();
 assert.equal(started,2,'restart requires a new correct answer');
 const game=read('chacha.js'),html=read('index.html'),sw=read('sw.js'),rank=read('ranking.js');
 assert(game.includes("'start').onclick=()=>window.chachaQuizGate.request(start)"));
 assert(game.includes("'retry').onclick=()=>window.chachaQuizGate.request(start)"));
-assert(html.includes('quiz-bank.js?v=1.0.0') && html.includes('quiz-gate.js?v=1.0.0'));
-assert(sw.includes('quiz-bank.js?v=1.0.0') && sw.includes('quiz-gate.js?v=1.0.0'));
+assert(html.includes('quiz-bank.js?v=1.0.0') && html.includes('quiz-gate.js?v=1.1.0'));
+assert(sw.includes('quiz-bank.js?v=1.0.0') && sw.includes('quiz-gate.js?v=1.1.0'));
 assert(rank.includes('/functions/v1/ranking-alternate'));
 assert(!read('pwa.js').includes('garu-arcade-hub'));
-console.log('PASS: 100 questions, 4 unique answers, wrong-answer blocking, start/retry gate, PWA cache and ranking isolation');
+console.log('PASS: 100 questions, 4 unique answers, two-error replacement, reset, stale-button protection, start/retry gate, PWA cache and ranking isolation');
